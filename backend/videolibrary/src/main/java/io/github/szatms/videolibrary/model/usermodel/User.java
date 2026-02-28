@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Document(collection = "users")
 public class User {
     @Id
-    private Integer userId;
+    private String userId;
 
     @Field(name = "username")
     private String username;
