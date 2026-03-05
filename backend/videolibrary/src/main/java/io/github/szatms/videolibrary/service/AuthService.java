@@ -9,9 +9,9 @@ import io.github.szatms.videolibrary.model.usermodel.dto.UserCreateDTO;
 import io.github.szatms.videolibrary.model.usermodel.dto.UserLoginDTO;
 import io.github.szatms.videolibrary.model.usermodel.dto.UserResponseDTO;
 import io.github.szatms.videolibrary.security.CustomUserDetails;
+import io.github.szatms.videolibrary.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +24,23 @@ public class AuthService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+
+    //=========================
+    // LOGIN
+    //=========================
+    public AuthResponseDTO login(UserLoginDTO dto){
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
+
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        User user = userDetails.getUser();
+
+        UserResponseDTO responseUser = userMapper.toResponseDTO(user);
+        String token = jwtService.generateToken(userDetails);
+
+        return new AuthResponseDTO(responseUser, token);
+    }
 
     //=========================
     // REGISTRATION
@@ -42,25 +59,11 @@ public class AuthService {
 
         userRepository.save(user);
 
-        //return new AuthResponseDTO(user, user.getRole());
-        //***************PLACEHOLDER***************
+        //Most jött létre -> nem kell külön auth
         UserResponseDTO responseUser = userMapper.toResponseDTO(user);
-        return new AuthResponseDTO(responseUser, null);
-        //***************PLACEHOLDER***************
-    }
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        String token = jwtService.generateToken(userDetails);
 
-    //=========================
-    // LOGIN
-    //=========================
-    public AuthResponseDTO login(UserLoginDTO dto){
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
-
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
-        User user = userDetails.getUser();
-
-        UserResponseDTO responseUser = userMapper.toResponseDTO(user);
-        return new AuthResponseDTO(responseUser, null);
+        return new AuthResponseDTO(responseUser, token);
     }
 }
