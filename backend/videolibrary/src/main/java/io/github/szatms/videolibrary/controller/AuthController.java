@@ -6,10 +6,7 @@ import io.github.szatms.videolibrary.model.usermodel.dto.UserLoginDTO;
 import io.github.szatms.videolibrary.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,5 +28,13 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody UserLoginDTO dto) {
         return ResponseEntity.ok(authService.login(dto));
+    }
+
+    //=========================
+    // USER CHECK
+    //=========================
+    @GetMapping("/has-users")
+    public boolean hasUsers() {
+        return authService.hasUsers();
     }
 }

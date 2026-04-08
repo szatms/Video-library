@@ -66,4 +66,11 @@ public class AuthService {
 
         return new AuthResponseDTO(responseUser, token);
     }
+
+    //=========================
+    // USER CHECK
+    //=========================
+    public boolean hasUsers() {
+        return userRepository.count() > 0;
+    }
 }
