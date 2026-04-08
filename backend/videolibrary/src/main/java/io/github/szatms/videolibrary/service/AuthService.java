@@ -53,7 +53,7 @@ public class AuthService {
 
         User user = userMapper.fromCreateDTO(dto,  passwordHash);
         if (userRepository.count() == 0)
-            user.setRole(Role.ADMIN);
+            user.setRole(Role.OWNER);
         else
             user.setRole(Role.USER);
 
