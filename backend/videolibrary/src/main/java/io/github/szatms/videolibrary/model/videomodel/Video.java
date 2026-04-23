@@ -1,9 +1,9 @@
 package io.github.szatms.videolibrary.model.videomodel;
 
-import io.github.szatms.videolibrary.model.channelmodel.Channel;
 import io.github.szatms.videolibrary.model.statsmodel.Stats;
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -19,10 +19,14 @@ public class Video {
     @Id
     private String videoId;
 
+    @Indexed(unique = true)
+    private String youtubeId;
+
     private String title;
     private String description;
+    private String thumbnailUrl;
 
-    private Channel channel;
+    private String channelId;
     private Stats stats;
 
     private Instant publishedAt;

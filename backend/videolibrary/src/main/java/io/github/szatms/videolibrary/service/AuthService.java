@@ -51,7 +51,7 @@ public class AuthService {
 
         String passwordHash = passwordEncoder.encode(dto.getPassword());
 
-        User user = userMapper.fromCreateDTO(dto,  passwordHash);
+        User user = userMapper.fromCreateDTO(dto, passwordHash);
         if (userRepository.count() == 0)
             user.setRole(Role.OWNER);
         else

@@ -5,6 +5,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.Optional;
 
 public interface VideoRepository extends MongoRepository<Video, String> {
-    Optional<Video> findByVideoId(String videoId);
-    boolean existsByVideoId(String videoId);
+    Optional<Video> findByYoutubeId(String youtubeId);
+    boolean existsByYoutubeId(String youtubeId);
 }

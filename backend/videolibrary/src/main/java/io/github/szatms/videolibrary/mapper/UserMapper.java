@@ -58,8 +58,5 @@ public class UserMapper {
     public void updateEntityFromUserDTO(UserSelfUpdateDTO dto, User user){
         if(dto.getUsername() != null)
             user.setUsername(dto.getUsername());
-
-        if (dto.getPassword() != null)
-            user.setPasswordHash(dto.getPassword());
     }
 }
