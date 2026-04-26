@@ -13,6 +13,5 @@ import java.time.Instant;
 public class Stats {
     private long viewCount;
     private long likeCount;
-    private long commentCount;
     private Instant updatedAt;
 }

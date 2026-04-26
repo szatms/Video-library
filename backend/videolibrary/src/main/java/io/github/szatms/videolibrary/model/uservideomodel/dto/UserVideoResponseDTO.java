@@ -7,10 +7,11 @@ import java.time.Instant;
 
 @Data
 public class UserVideoResponseDTO {
-    private String UVid;
-    private String userId;
+    private String id;
 
     private boolean watched;
+    private String note;
+
     private Instant addedAt;
 
     private VideoResponseDTO video;

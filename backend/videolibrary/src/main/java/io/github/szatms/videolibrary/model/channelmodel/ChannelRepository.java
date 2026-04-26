@@ -1,4 +1,10 @@
 package io.github.szatms.videolibrary.model.channelmodel;
 
-public interface ChannelRepository {
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.Optional;
+
+public interface ChannelRepository extends MongoRepository<Channel, String> {
+    Optional<Channel> findByChannelId(String channelId);
+    boolean existsByChannelId(String channelId);
 }

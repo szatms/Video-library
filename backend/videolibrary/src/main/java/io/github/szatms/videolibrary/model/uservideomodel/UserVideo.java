@@ -17,7 +17,7 @@ import java.time.Instant;
 @CompoundIndex(def = "{'userId': 1, 'videoId': 1}", unique = true)
 public class UserVideo {
     @Id
-    private String UVid;
+    private String id;
 
     private String userId;
     private String videoId;
