@@ -2,6 +2,7 @@ package io.github.szatms.videolibrary.mapper;
 
 import io.github.szatms.videolibrary.model.videomodel.Video;
 import io.github.szatms.videolibrary.model.videomodel.dto.VideoResponseDTO;
+import io.github.szatms.videolibrary.model.videomodel.dto.VideoSummaryDTO;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,8 +28,8 @@ public class VideoMapper {
     //=========================
     // ENTITY --> RESPONSE DTO
     //=========================
-    public VideoResponseDTO toSummaryDTO(Video video){
-        VideoResponseDTO dto = new VideoResponseDTO();
+    public VideoSummaryDTO toSummaryDTO(Video video){
+        VideoSummaryDTO dto = new VideoSummaryDTO();
 
         dto.setVideoId(video.getVideoId());
         dto.setYoutubeId(video.getYoutubeId());

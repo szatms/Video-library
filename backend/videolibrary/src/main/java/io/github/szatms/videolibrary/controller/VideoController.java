@@ -6,6 +6,7 @@ import io.github.szatms.videolibrary.model.videomodel.dto.VideoResponseDTO;
 import io.github.szatms.videolibrary.service.VideoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,8 +18,8 @@ public class VideoController {
     private final VideoMapper videoMapper;
 
     @PostMapping("/import")
-    public VideoResponseDTO importVideo() throws Exception {
-        Video video = videoService.importVideo();
+    public VideoResponseDTO importVideo(@RequestParam String youtubeId) {
+        Video video = videoService.getOrCreateVideo(youtubeId);
         return videoMapper.toResponseDTO(video);
     }
 }

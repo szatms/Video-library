@@ -2,99 +2,106 @@ import { useState } from "react";
 import { logout } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 
+import VideoList from "../components/video/VideoList";
+import VideoDetail from "../components/video/VideoDetail";
+
 function Home() {
   const navigate = useNavigate();
-  const [layout, setLayout] = useState("default"); // default | cinema
+
+  const [activeSection, setActiveSection] = useState("videos");
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   const handleLogout = () => {
     logout();
     navigate("/", { replace: true });
   };
 
+  const handleGoHome = () => {
+    setActiveSection("videos");
+    setSelectedVideo(null);
+    navigate("/home");
+  };
+
   return (
     <div className="d-flex vh-100 text-light">
 
-      {/* 🔹 SIDEBAR */}
-      <div className="p-3" style={{ width: "250px", background: "rgba(0,0,0,0.6)" }}>
-        <h5>Logo</h5>
-        <input className="form-control mb-3" placeholder="Search..." />
-
-        <hr />
-
-        <h6>Library</h6>
-        <ul className="list-unstyled">
-          <li>Playlists</li>
-          <li>Channels</li>
-          <li>Videos</li>
-          <li>Notes</li>
-        </ul>
-
-        <hr />
-
-        <h6>Settings</h6>
-        <ul className="list-unstyled">
-          <li>Profile</li>
-          <li>Preferences</li>
-        </ul>
-
-        <hr />
-
-        {/* 🔹 Layout switch */}
+      {/* SIDEBAR */}
+      <div
+        className="p-3 d-flex flex-column"
+        style={{
+          width: "260px",
+          background: "rgba(0,0,0,0.6)",
+          borderRight: "1px solid rgba(255,255,255,0.1)"
+        }}
+      >
         <button
-          className="btn btn-outline-light w-100 mb-2"
-          onClick={() =>
-            setLayout(layout === "default" ? "cinema" : "default")
-          }
+          type="button"
+          className="btn btn-link p-0 mb-3 text-white fw-bold text-decoration-none text-start align-self-start"
+          onClick={handleGoHome}
         >
-          Switch Layout
+          VideoLibrary
         </button>
 
-        <button className="btn btn-danger w-100" onClick={handleLogout}>
-          Logout
-        </button>
+        <input
+          className="form-control mb-3"
+          placeholder="Search..."
+        />
+
+        <hr />
+
+        {/* LIBRARY */}
+        <h6 className="text-white fw-bold">Library</h6>
+        <ul className="list-unstyled mb-3">
+          <li
+            className={`mb-1 ${activeSection === "videos" ? "text-decoration-underline" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              setActiveSection("videos");
+              setSelectedVideo(null);
+            }}
+          >
+            Videos
+          </li>
+
+          <li style={{ opacity: 0.5 }}>Channels</li>
+          <li style={{ opacity: 0.5 }}>Playlists</li>
+        </ul>
+
+        <hr />
+
+        {/* SETTINGS */}
+        <h6 className="text-white fw-bold">Settings</h6>
+        <ul className="list-unstyled mb-3">
+          <li style={{ opacity: 0.5 }}>Profile</li>
+          <li style={{ opacity: 0.5 }}>Preferences</li>
+        </ul>
+
+        <div className="mt-auto">
+          <button className="btn btn-danger w-100" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
       </div>
 
-      {/* 🔹 MAIN CONTENT */}
+      {/* MAIN CONTENT */}
       <div className="flex-grow-1 d-flex flex-column">
 
-        {layout === "default" ? (
-          <>
-            {/* TOP */}
-            <div className="flex-grow-1 d-flex">
+        {/* VIDEOS SECTION */}
+        {activeSection === "videos" && !selectedVideo && (
+          <VideoList onSelect={setSelectedVideo} />
+        )}
 
-              {/* VIDEO */}
-              <div className="flex-grow-1 d-flex justify-content-center align-items-center">
-                <h3>Video Player</h3>
-              </div>
+        {activeSection === "videos" && selectedVideo && (
+          <VideoDetail
+            userVideo={selectedVideo}
+            onBack={() => setSelectedVideo(null)}
+          />
+        )}
 
-              {/* NOTES */}
-              <div style={{ width: "300px", background: "rgba(0,0,0,0.6)" }} className="p-3">
-                <h5>Notes</h5>
-                <p>Markdown notes here...</p>
-              </div>
-            </div>
-
-            {/* BOTTOM */}
-            <div style={{ height: "150px", background: "rgba(0,0,0,0.5)" }} className="p-3">
-              <p>Stats / Video info</p>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* CINEMA MODE */}
-
-            <div className="flex-grow-1 d-flex justify-content-center align-items-center">
-              <h2>Big Video Mode</h2>
-            </div>
-
-            <div style={{ height: "60px", background: "rgba(0,0,0,0.5)" }} className="d-flex align-items-center px-3">
-              <p className="mb-0">Info / Stats / Tabs</p>
-            </div>
-
-            <div className="flex-grow-1 p-3">
-              <p>Notes / Info / Stats content</p>
-            </div>
-          </>
+        {activeSection !== "videos" && (
+          <div className="d-flex justify-content-center align-items-center h-100">
+            <h4 className="text-muted">Coming soon...</h4>
+          </div>
         )}
 
       </div>

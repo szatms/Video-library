@@ -5,17 +5,19 @@ import { login } from "../services/authService";
 function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
     try {
-      const data = await login(username, password);
-      console.log("LOGIN OK:", data);
+      await login(username, password);
       navigate("/home");
     } catch (err) {
       console.error("LOGIN ERROR:", err);
+      setError("Login failed. Check your credentials and backend token setup.");
     }
   };
 
@@ -47,6 +49,12 @@ function LoginForm() {
         <button className="btn btn-success w-100 btn-lg">
           Sign In
         </button>
+
+        {error && (
+          <div className="text-danger mt-3 text-center">
+            {error}
+          </div>
+        )}
       </form>
     </div>
   );

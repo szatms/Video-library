@@ -3,24 +3,21 @@ package io.github.szatms.videolibrary.integration.youtube;
 import io.github.szatms.videolibrary.integration.youtube.dto.PythonVideoResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
-
-import java.io.File;
+import org.springframework.web.client.RestClient;
 
 @Component
 @RequiredArgsConstructor
 public class PythonVideoDataProvider {
 
-    private final ObjectMapper objectMapper;
+    private final RestClient restClient;
 
-    public PythonVideoResponseDTO load() {
-        try {
-            return objectMapper.readValue(
-                    new File("video.json"),
-                    PythonVideoResponseDTO.class
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load video data", e);
-        }
+    public PythonVideoResponseDTO load(String youtubeId) {
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/youtube/video")
+                        .queryParam("url", youtubeId)
+                        .build())
+                .retrieve()
+                .body(PythonVideoResponseDTO.class);
     }
 }

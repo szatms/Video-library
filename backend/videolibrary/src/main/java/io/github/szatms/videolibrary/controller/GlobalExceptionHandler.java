@@ -1,5 +1,6 @@
 package io.github.szatms.videolibrary.controller;
 
+import io.github.szatms.videolibrary.exception.PythonMicroserviceUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,6 +24,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(PythonMicroserviceUnavailableException.class)
+    public ResponseEntity<Map<String, String>> handlePythonMicroserviceUnavailable(
+            PythonMicroserviceUnavailableException ex
+    ) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of("error", ex.getMessage()));
     }
 }

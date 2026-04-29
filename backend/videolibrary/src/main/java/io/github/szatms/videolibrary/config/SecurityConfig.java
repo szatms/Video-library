@@ -66,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "OWNER")
                         .anyRequest().authenticated()
                 )
-                .authenticationProvider(authenticationProvider()) // <-- így jó
+                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

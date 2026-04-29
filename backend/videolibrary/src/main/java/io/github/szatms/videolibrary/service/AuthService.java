@@ -59,7 +59,6 @@ public class AuthService {
 
         userRepository.save(user);
 
-        //Most jött létre -> nem kell külön auth
         UserResponseDTO responseUser = userMapper.toResponseDTO(user);
         CustomUserDetails userDetails = new CustomUserDetails(user);
         String token = jwtService.generateToken(userDetails);

@@ -1,4 +1,5 @@
 import api from "./api";
+import { clearToken, setToken } from "./tokenService";
 
 export const login = async (username, password) => {
   const res = await api.post("/auth/login", {
@@ -6,9 +7,14 @@ export const login = async (username, password) => {
     password,
   });
 
-  const token = res.data.token;
+  const token = res.data?.token;
+  const tokenSaved = setToken(token);
 
-  localStorage.setItem("token", token);
+  if (!tokenSaved) {
+    throw new Error("Login response did not contain a valid token.");
+  }
+
+  await api.get("/users/me");
 
   return res.data;
 };
@@ -23,5 +29,5 @@ export const register = async (username, password) => {
 };
 
 export const logout = () => {
-  localStorage.removeItem("token");
+  clearToken();
 };

@@ -1,10 +1,11 @@
 package io.github.szatms.videolibrary.mapper;
 
-import io.github.szatms.videolibrary.model.usermodel.dto.UserResponseDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoResponseDTO;
+import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoSummaryResponseDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoUpdateDTO;
 import io.github.szatms.videolibrary.model.videomodel.dto.VideoResponseDTO;
+import io.github.szatms.videolibrary.model.videomodel.dto.VideoSummaryDTO;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,6 +15,17 @@ public class UserVideoMapper {
     //=========================
     public UserVideoResponseDTO toResponseDTO(UserVideo userVideo, VideoResponseDTO videoDto) {
         UserVideoResponseDTO dto = new UserVideoResponseDTO();
+
+        dto.setId(userVideo.getId());
+        dto.setWatched(userVideo.isWatched());
+        dto.setNote(userVideo.getNote());
+        dto.setAddedAt(userVideo.getAddedAt());
+        dto.setVideo(videoDto);
+        return dto;
+    }
+
+    public UserVideoSummaryResponseDTO toSummaryResponseDTO(UserVideo userVideo, VideoSummaryDTO videoDto) {
+        UserVideoSummaryResponseDTO dto = new UserVideoSummaryResponseDTO();
 
         dto.setId(userVideo.getId());
         dto.setWatched(userVideo.isWatched());
