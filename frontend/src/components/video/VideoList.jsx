@@ -1,5 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+
+const SORT_OPTIONS = [
+  { value: "ADDED_AT", label: "Date added" },
+  { value: "VIEWS", label: "Views" },
+  { value: "WATCHED", label: "Watched" },
+];
 
 const toSummaryItem = (userVideo) => ({
   id: userVideo.id,
@@ -12,40 +19,76 @@ const toSummaryItem = (userVideo) => ({
     title: userVideo.video.title,
     thumbnailUrl: userVideo.video.thumbnailUrl,
     channelId: userVideo.video.channelId,
+    viewCount: userVideo.video.viewCount ?? 0,
   },
 });
 
-function VideoList({ onSelect }) {
+function VideoList() {
+  const navigate = useNavigate();
   const [videos, setVideos] = useState([]);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("ADDED_AT");
+  const [direction, setDirection] = useState("DESC");
+  const [unwatchedFirst, setUnwatchedFirst] = useState(true);
+  const sortMenuRef = useRef(null);
+
+  const activeSortLabel = useMemo(
+    () => SORT_OPTIONS.find((option) => option.value === sortBy)?.label ?? "Date added",
+    [sortBy]
+  );
+
+  const loadVideos = useCallback(async (signal) => {
+    try {
+      const res = await api.get("/uservideos", {
+        signal,
+        params: {
+          sortBy,
+          direction,
+          unwatchedFirst,
+        },
+      });
+      setVideos(res.data);
+      setError("");
+    } catch (err) {
+      if (err.code === "ERR_CANCELED") {
+        return;
+      }
+
+      console.error("VIDEO LIST ERROR:", err);
+      setError("Could not load your videos.");
+    } finally {
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
+    }
+  }, [direction, sortBy, unwatchedFirst]);
 
   useEffect(() => {
     const controller = new AbortController();
+    setLoading(true);
 
-    const loadVideos = async () => {
-      try {
-        const res = await api.get("/uservideos", { signal: controller.signal });
-        setVideos(res.data);
-      } catch (err) {
-        if (err.code === "ERR_CANCELED") {
-          return;
-        }
-
-        console.error("VIDEO LIST ERROR:", err);
-        setError("Could not load your videos.");
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadVideos();
+    loadVideos(controller.signal);
 
     return () => {
       controller.abort();
+    };
+  }, [loadVideos]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target)) {
+        setSortMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -59,11 +102,30 @@ function VideoList({ onSelect }) {
 
     try {
       const res = await api.post("/uservideos", { url: input });
-      setVideos((current) => [toSummaryItem(res.data), ...current]);
+      const createdVideo = toSummaryItem(res.data);
+      setVideos((current) => [createdVideo, ...current]);
       setInput("");
+      await loadVideos();
     } catch (err) {
       console.error("VIDEO ADD ERROR:", err);
       setError("Could not add the video.");
+    }
+  };
+
+  const handleDelete = async (event, id) => {
+    event.stopPropagation();
+    setError("");
+    setDeletingId(id);
+
+    try {
+      await api.delete(`/uservideos/${id}`);
+      setVideos((current) => current.filter((video) => video.id !== id));
+      await loadVideos();
+    } catch (err) {
+      console.error("VIDEO DELETE ERROR:", err);
+      setError("Could not delete the video.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -71,16 +133,73 @@ function VideoList({ onSelect }) {
     <div className="p-3">
 
       {/* ADD PANEL */}
-      <div className="mb-3 d-flex gap-2">
-        <input
-          className="form-control"
-          placeholder="YouTube link or ID"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <button className="btn btn-success" onClick={handleAdd}>
-          Add
-        </button>
+      <div className="video-toolbar mb-3">
+        <div className="video-add-group">
+          <input
+            className="form-control"
+            placeholder="YouTube link or ID"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <button className="btn btn-success" onClick={handleAdd}>
+            Add
+          </button>
+        </div>
+
+        <div className="video-sort-panel" ref={sortMenuRef}>
+          <button
+            type="button"
+            className="btn btn-outline-light video-sort-trigger"
+            onClick={() => setSortMenuOpen((current) => !current)}
+            aria-expanded={sortMenuOpen}
+          >
+            <span className="text-start">
+              <span className="video-sort-trigger-label">Sort</span>
+              <span className="video-sort-trigger-value">{activeSortLabel}</span>
+            </span>
+            <i className={`bi ${sortMenuOpen ? "bi-chevron-up" : "bi-chevron-down"}`} aria-hidden="true" />
+          </button>
+
+          {sortMenuOpen && (
+            <div className="video-sort-menu">
+              <div className="video-sort-options" role="listbox" aria-label="Sort videos by">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`video-sort-option ${sortBy === option.value ? "active" : ""}`}
+                    onClick={() => {
+                      setSortBy(option.value);
+                      setSortMenuOpen(false);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="video-sort-controls">
+                <label className="video-sort-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={unwatchedFirst}
+                    onChange={(event) => setUnwatchedFirst(event.target.checked)}
+                  />
+                  <span>Unwatched first</span>
+                </label>
+
+                <button
+                  type="button"
+                  className="btn btn-outline-light video-sort-direction"
+                  onClick={() => setDirection((current) => (current === "DESC" ? "ASC" : "DESC"))}
+                  aria-label={direction === "DESC" ? "Descending order" : "Ascending order"}
+                >
+                  <i className={`bi ${direction === "DESC" ? "bi-arrow-down" : "bi-arrow-up"}`} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -90,7 +209,7 @@ function VideoList({ onSelect }) {
       )}
 
       {/* LIST */}
-      <div className="list-group">
+      <div className="video-list">
         {!loading && videos.length === 0 && (
           <div className="text-muted">No videos yet.</div>
         )}
@@ -98,25 +217,35 @@ function VideoList({ onSelect }) {
         {videos.map((v) => (
           <div
             key={v.id}
-            className="list-group-item list-group-item-action d-flex gap-3 align-items-start"
-            onClick={() => onSelect(v)}
-            style={{ cursor: "pointer" }}
+            className="video-list-card d-flex gap-3 align-items-start justify-content-between"
+            onClick={() => navigate(`/home/${v.id}`)}
           >
-            <img
-              src={v.video.thumbnailUrl}
-              alt={v.video.title}
-              style={{
-                width: "120px",
-                height: "68px",
-                objectFit: "cover",
-                borderRadius: "6px",
-                flexShrink: 0,
-              }}
-            />
+            <div className="d-flex gap-3 align-items-start min-w-0 flex-grow-1">
+              <img
+                src={v.video.thumbnailUrl}
+                alt={v.video.title}
+                className="video-list-thumbnail"
+              />
 
-            <div className="min-w-0">
-              <div className="fw-semibold">{v.video.title}</div>
+              <div className="min-w-0">
+                <div className="fw-semibold">{v.video.title}</div>
+                <div className="d-flex flex-wrap gap-3 mt-2 text-muted small">
+                  <span>{v.watched ? "Watched" : "Unwatched"}</span>
+                  <span>{new Date(v.addedAt).toLocaleDateString()}</span>
+                  <span>{(v.video.viewCount ?? 0).toLocaleString()} views</span>
+                </div>
+              </div>
             </div>
+
+            <button
+              type="button"
+              className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
+              onClick={(event) => handleDelete(event, v.id)}
+              disabled={deletingId === v.id}
+              aria-label={`Delete ${v.video.title}`}
+            >
+              {deletingId === v.id ? "..." : "X"}
+            </button>
           </div>
         ))}
       </div>

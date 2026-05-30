@@ -50,6 +50,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/home/:videoId"
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<Login />} />
           </>
         )}

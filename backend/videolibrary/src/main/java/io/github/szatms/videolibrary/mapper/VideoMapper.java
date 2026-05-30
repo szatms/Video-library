@@ -36,6 +36,7 @@ public class VideoMapper {
         dto.setTitle(video.getTitle());
         dto.setThumbnailUrl(video.getThumbnailUrl());
         dto.setChannelId(video.getChannelId());
+        dto.setViewCount(video.getStats() != null ? video.getStats().getViewCount() : 0L);
 
         return dto;
     }

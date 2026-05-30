@@ -7,13 +7,18 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
+import java.util.Set;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Set<String> CONFLICT_MESSAGES = Set.of(
+            "Video already added",
+            "Video refresh already in progress"
+    );
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-        HttpStatus status = "Video already added".equals(ex.getMessage())
+        HttpStatus status = CONFLICT_MESSAGES.contains(ex.getMessage())
                 ? HttpStatus.CONFLICT
                 : HttpStatus.BAD_REQUEST;
 

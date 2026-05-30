@@ -2,15 +2,22 @@ package io.github.szatms.videolibrary.service;
 
 import io.github.szatms.videolibrary.mapper.UserVideoMapper;
 import io.github.szatms.videolibrary.model.usermodel.UserRepository;
+import io.github.szatms.videolibrary.model.uservideomodel.SortDirection;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideoRepository;
+import io.github.szatms.videolibrary.model.uservideomodel.UserVideoSortBy;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoUpdateDTO;
 import io.github.szatms.videolibrary.model.videomodel.Video;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,7 +67,23 @@ public class UserVideoService {
         return userVideoRepository.save(userVideo);
     }
 
-    public List<UserVideo> getVideos(String userId) {
+    public void deleteVideo(String userId, String userVideoId) {
+        UserVideo userVideo = getVideo(userId, userVideoId);
+        long assignmentCount = userVideoRepository.countByVideoId(userVideo.getVideoId());
+
+        userVideoRepository.deleteById(userVideo.getId());
+
+        if (assignmentCount == 1) {
+            videoService.deleteById(userVideo.getVideoId());
+        }
+    }
+
+    public List<UserVideo> getVideos(
+            String userId,
+            UserVideoSortBy sortBy,
+            SortDirection direction,
+            boolean unwatchedFirst
+    ) {
         if (userId == null || userId.isBlank()) {
             throw new IllegalArgumentException("Invalid userId");
         }
@@ -68,6 +91,77 @@ public class UserVideoService {
             throw new IllegalStateException("User not found");
         }
 
-        return userVideoRepository.findAllByUserIdOrderByAddedAtDesc(userId);
+        UserVideoSortBy effectiveSortBy = sortBy == null ? UserVideoSortBy.ADDED_AT : sortBy;
+        SortDirection effectiveDirection = direction == null ? SortDirection.DESC : direction;
+
+        if (effectiveSortBy == UserVideoSortBy.VIEWS) {
+            return getVideosSortedByViews(userId, effectiveDirection, unwatchedFirst);
+        }
+
+        return userVideoRepository.findAllByUserId(
+                userId,
+                buildDatabaseSort(effectiveSortBy, effectiveDirection, unwatchedFirst)
+        );
+    }
+
+    private List<UserVideo> getVideosSortedByViews(String userId, SortDirection direction, boolean unwatchedFirst) {
+        List<UserVideo> userVideos = userVideoRepository.findAllByUserId(
+                userId,
+                Sort.by(Sort.Direction.DESC, "addedAt")
+        );
+
+        Map<String, Video> videosById = videoService.getByIds(userVideos.stream()
+                        .map(UserVideo::getVideoId)
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(Video::getVideoId, Function.identity()));
+
+        Comparator<UserVideo> comparator = Comparator.comparingLong(
+                (UserVideo userVideo) -> getViewCount(videosById.get(userVideo.getVideoId()))
+        );
+
+        if (direction == SortDirection.DESC) {
+            comparator = comparator.reversed();
+        }
+
+        if (unwatchedFirst) {
+            comparator = Comparator.comparing(UserVideo::isWatched).thenComparing(comparator);
+        }
+
+        comparator = comparator.thenComparing(UserVideo::getAddedAt, Comparator.nullsLast(Comparator.reverseOrder()));
+
+        return userVideos.stream()
+                .sorted(comparator)
+                .toList();
+    }
+
+    private Sort buildDatabaseSort(UserVideoSortBy sortBy, SortDirection direction, boolean unwatchedFirst) {
+        Sort.Direction sortDirection = direction == SortDirection.ASC
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+        Sort sort = Sort.unsorted();
+
+        if (unwatchedFirst && sortBy != UserVideoSortBy.WATCHED) {
+            sort = sort.and(Sort.by(Sort.Direction.ASC, "watched"));
+        }
+
+        if (sortBy == UserVideoSortBy.WATCHED) {
+            return sort.and(Sort.by(
+                    new Sort.Order(sortDirection, "watched"),
+                    new Sort.Order(Sort.Direction.DESC, "addedAt")
+            ));
+        }
+
+        return sort.and(Sort.by(
+                new Sort.Order(sortDirection, "addedAt")
+        ));
+    }
+
+    private long getViewCount(Video video) {
+        if (video == null || video.getStats() == null) {
+            return 0L;
+        }
+        return video.getStats().getViewCount();
     }
 }

@@ -9,4 +9,5 @@ public class VideoSummaryDTO {
     private String title;
     private String thumbnailUrl;
     private String channelId;
+    private long viewCount;
 }

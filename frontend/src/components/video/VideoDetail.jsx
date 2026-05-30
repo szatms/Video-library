@@ -148,7 +148,7 @@ function renderMarkdown(text) {
   return elements;
 }
 
-function VideoDetail({ userVideo, onBack }) {
+function VideoDetail({ userVideoId, onBack }) {
   const [videoDetail, setVideoDetail] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
@@ -168,7 +168,7 @@ function VideoDetail({ userVideo, onBack }) {
 
     const loadVideoDetail = async () => {
       try {
-        const res = await api.get(`/uservideos/${userVideo.id}`, {
+        const res = await api.get(`/uservideos/${userVideoId}`, {
           signal: controller.signal,
         });
         setVideoDetail(res.data);
@@ -192,15 +192,13 @@ function VideoDetail({ userVideo, onBack }) {
     return () => {
       controller.abort();
     };
-  }, [userVideo.id]);
+  }, [userVideoId]);
 
-  const summaryVideo = userVideo.video;
-  const detailedVideo = videoDetail?.video;
-  const activeVideo = detailedVideo ?? summaryVideo;
+  const activeVideo = videoDetail?.video;
   const youtubeId = activeVideo?.youtubeId;
-  const stats = detailedVideo?.stats;
+  const stats = activeVideo?.stats;
   const currentNote = videoDetail?.note ?? "";
-  const currentWatched = videoDetail?.watched ?? userVideo.watched ?? false;
+  const currentWatched = videoDetail?.watched ?? false;
   const isDirty = noteDraft !== currentNote;
 
   const applyFormat = (prefix, suffix = "", placeholder = "text") => {
@@ -237,7 +235,7 @@ function VideoDetail({ userVideo, onBack }) {
     setSaveError("");
 
     try {
-      const res = await api.patch(`/uservideos/${userVideo.id}`, {
+      const res = await api.patch(`/uservideos/${userVideoId}`, {
         note: noteDraft,
         watched: currentWatched,
       });
@@ -257,6 +255,10 @@ function VideoDetail({ userVideo, onBack }) {
 
   if (loadError) {
     return <div className="p-4 text-danger">{loadError}</div>;
+  }
+
+  if (!activeVideo) {
+    return <div className="p-4 text-danger">Video details are unavailable.</div>;
   }
 
   return (
@@ -293,7 +295,7 @@ function VideoDetail({ userVideo, onBack }) {
             <div>Views: {stats?.viewCount ?? "-"}</div>
             <div>Likes: {stats?.likeCount ?? "-"}</div>
             <div>
-              Published: {detailedVideo?.publishedAt ? new Date(detailedVideo.publishedAt).toLocaleDateString() : "-"}
+              Published: {activeVideo.publishedAt ? new Date(activeVideo.publishedAt).toLocaleDateString() : "-"}
             </div>
           </div>
         </div>

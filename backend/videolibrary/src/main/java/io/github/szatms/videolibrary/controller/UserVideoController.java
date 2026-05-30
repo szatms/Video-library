@@ -2,7 +2,9 @@ package io.github.szatms.videolibrary.controller;
 
 import io.github.szatms.videolibrary.mapper.UserVideoMapper;
 import io.github.szatms.videolibrary.mapper.VideoMapper;
+import io.github.szatms.videolibrary.model.uservideomodel.SortDirection;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
+import io.github.szatms.videolibrary.model.uservideomodel.UserVideoSortBy;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoCreateDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoResponseDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoSummaryResponseDTO;
@@ -13,6 +15,7 @@ import io.github.szatms.videolibrary.service.VideoService;
 import io.github.szatms.videolibrary.security.CustomUserDetails;
 import io.github.szatms.videolibrary.utils.LinkUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,10 +36,13 @@ public class UserVideoController {
 
     @GetMapping
     public List<UserVideoSummaryResponseDTO> getVideos(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "ADDED_AT") UserVideoSortBy sortBy,
+            @RequestParam(defaultValue = "DESC") SortDirection direction,
+            @RequestParam(defaultValue = "true") boolean unwatchedFirst
     ) {
         String userId = userDetails.getUser().getUserId();
-        List<UserVideo> userVideos = userVideoService.getVideos(userId);
+        List<UserVideo> userVideos = userVideoService.getVideos(userId, sortBy, direction, unwatchedFirst);
         Map<String, Video> videosById = getVideosById(userVideos);
 
         return userVideos.stream()
@@ -52,7 +58,12 @@ public class UserVideoController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         String userId = userDetails.getUser().getUserId();
-        List<UserVideo> userVideos = userVideoService.getVideos(userId);
+        List<UserVideo> userVideos = userVideoService.getVideos(
+                userId,
+                UserVideoSortBy.ADDED_AT,
+                SortDirection.DESC,
+                true
+        );
         Map<String, Video> videosById = getVideosById(userVideos);
 
         return userVideos.stream()
@@ -115,6 +126,16 @@ public class UserVideoController {
                 userVideo,
                 videoMapper.toResponseDTO(video)
         );
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteVideo(
+            @PathVariable String id,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        String userId = userDetails.getUser().getUserId();
+        userVideoService.deleteVideo(userId, id);
+        return ResponseEntity.noContent().build();
     }
 
     private Map<String, Video> getVideosById(List<UserVideo> userVideos) {

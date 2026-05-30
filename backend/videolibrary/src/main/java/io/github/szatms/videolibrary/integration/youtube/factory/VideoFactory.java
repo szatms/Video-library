@@ -24,6 +24,20 @@ public class VideoFactory {
                 .build();
     }
 
+    public void updateEntityFromItem(Video video, PythonVideoResponseDTO.Item item) {
+        if (video == null || item == null || item.getSnippet() == null) {
+            throw new IllegalArgumentException("Invalid video data!");
+        }
+
+        video.setYoutubeId(item.getId());
+        video.setTitle(item.getSnippet().getTitle());
+        video.setDescription(item.getSnippet().getDescription());
+        video.setThumbnailUrl(extractThumbnail(item));
+        video.setChannelId(item.getSnippet().getChannelId());
+        video.setPublishedAt(parsePublishedAt(item));
+        video.setStats(mapStats(item.getStatistics()));
+    }
+
     //=========================
     // HELPER METHODS
     //=========================

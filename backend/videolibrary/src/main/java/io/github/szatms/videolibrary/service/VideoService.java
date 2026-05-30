@@ -53,4 +53,8 @@ public class VideoService {
     public List<Video> getByIds(Iterable<String> videoIds) {
         return videoRepository.findAllById(videoIds);
     }
+
+    public void deleteById(String videoId) {
+        videoRepository.deleteById(videoId);
+    }
 }

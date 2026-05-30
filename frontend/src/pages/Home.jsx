@@ -1,15 +1,49 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { logout } from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../services/api";
 
 import VideoList from "../components/video/VideoList";
 import VideoDetail from "../components/video/VideoDetail";
+import SettingsPanel from "../components/settings/SettingsPanel";
 
 function Home() {
   const navigate = useNavigate();
+  const { videoId } = useParams();
 
   const [activeSection, setActiveSection] = useState("videos");
-  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [userError, setUserError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadCurrentUser = async () => {
+      try {
+        const res = await api.get("/users/me", { signal: controller.signal });
+        setCurrentUser(res.data);
+        setUserError("");
+      } catch (err) {
+        if (err.code === "ERR_CANCELED") {
+          return;
+        }
+
+        console.error("CURRENT USER ERROR:", err);
+        setUserError("Could not load your account information.");
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingUser(false);
+        }
+      }
+    };
+
+    loadCurrentUser();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -18,7 +52,11 @@ function Home() {
 
   const handleGoHome = () => {
     setActiveSection("videos");
-    setSelectedVideo(null);
+    navigate("/home");
+  };
+
+  const handleOpenSettings = () => {
+    setActiveSection("settings");
     navigate("/home");
   };
 
@@ -57,7 +95,7 @@ function Home() {
             style={{ cursor: "pointer" }}
             onClick={() => {
               setActiveSection("videos");
-              setSelectedVideo(null);
+              navigate("/home");
             }}
           >
             Videos
@@ -73,7 +111,13 @@ function Home() {
         <h6 className="text-white fw-bold">Settings</h6>
         <ul className="list-unstyled mb-3">
           <li style={{ opacity: 0.5 }}>Profile</li>
-          <li style={{ opacity: 0.5 }}>Preferences</li>
+          <li
+            className={`${activeSection === "settings" ? "text-decoration-underline" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={handleOpenSettings}
+          >
+            Preferences
+          </li>
         </ul>
 
         <div className="mt-auto">
@@ -87,21 +131,24 @@ function Home() {
       <div className="flex-grow-1 d-flex flex-column">
 
         {/* VIDEOS SECTION */}
-        {activeSection === "videos" && !selectedVideo && (
-          <VideoList onSelect={setSelectedVideo} />
+        {activeSection === "videos" && !videoId && (
+          <VideoList />
         )}
 
-        {activeSection === "videos" && selectedVideo && (
+        {activeSection === "videos" && videoId && (
           <VideoDetail
-            userVideo={selectedVideo}
-            onBack={() => setSelectedVideo(null)}
+            userVideoId={videoId}
+            onBack={() => navigate("/home")}
           />
         )}
 
-        {activeSection !== "videos" && (
-          <div className="d-flex justify-content-center align-items-center h-100">
-            <h4 className="text-muted">Coming soon...</h4>
-          </div>
+        {activeSection === "settings" && (
+          <SettingsPanel
+            currentUser={currentUser}
+            loadingUser={loadingUser}
+            userError={userError}
+            onBack={handleGoHome}
+          />
         )}
 
       </div>
