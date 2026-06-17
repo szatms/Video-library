@@ -1,38 +1,22 @@
 package io.github.szatms.videolibrary.integration.youtube.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-
-import java.util.List;
 
 @Data
 public class PythonVideoResponseDTO {
-    List<Item> items;
-
-    @Data
-    public static class Item {
-        String id;
-        Snippet snippet;
-        Statistics statistics;
-    }
-
-    @Data
-    public static class Snippet {
-        String title;
-        String description;
-        String channelId;
-        String publishedAt;
-        Thumbnails thumbnails;
-    }
-
-    @Data
-    public static class Thumbnails {private Thumbnail high;}
-
-    @Data
-    public static class Thumbnail {private String url;}
-
-    @Data
-    public static class Statistics {
-        String viewCount;
-        String likeCount;
-    }
+    private String id;
+    private String title;
+    private String thumbnail;
+    private String description;
+    @JsonProperty("channel_id")
+    private String channelId;
+    @JsonProperty("uploader")
+    private String channelName;
+    private Long duration;
+    @JsonProperty("view_count")
+    private Long viewCount;
+    @JsonProperty("like_count")
+    private Long likeCount;
+    private Long timestamp;
 }

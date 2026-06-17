@@ -1,11 +1,13 @@
 package io.github.szatms.videolibrary.service;
 
 import io.github.szatms.videolibrary.mapper.UserVideoMapper;
+import io.github.szatms.videolibrary.mapper.VideoMapper;
 import io.github.szatms.videolibrary.model.usermodel.UserRepository;
 import io.github.szatms.videolibrary.model.uservideomodel.SortDirection;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideoRepository;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideoSortBy;
+import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoSummaryResponseDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoUpdateDTO;
 import io.github.szatms.videolibrary.model.videomodel.Video;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,6 +26,8 @@ public class UserVideoService {
     private final UserRepository userRepository;
     private final UserVideoMapper userVideoMapper;
     private final VideoService videoService;
+    private final TrashService trashService;
+    private final VideoMapper videoMapper;
 
     public UserVideo addVideo(String userId, String youtubeId){
         if (userId == null || userId.isBlank()) {
@@ -49,6 +51,7 @@ public class UserVideoService {
                 .videoId(video.getVideoId())
                 .watched(false)
                 .note(null)
+                .timestamps(new ArrayList<>())
                 .addedAt(Instant.now())
                 .build();
 
@@ -71,9 +74,13 @@ public class UserVideoService {
         UserVideo userVideo = getVideo(userId, userVideoId);
         long assignmentCount = userVideoRepository.countByVideoId(userVideo.getVideoId());
 
+        String restoreId = UUID.randomUUID().toString();
+        trashService.moveUserVideoToTrash(userVideo, restoreId);
         userVideoRepository.deleteById(userVideo.getId());
 
         if (assignmentCount == 1) {
+            Video video = videoService.getById(userVideo.getVideoId());
+            trashService.moveVideoToTrash(video, restoreId);
             videoService.deleteById(userVideo.getVideoId());
         }
     }
@@ -163,5 +170,57 @@ public class UserVideoService {
             return 0L;
         }
         return video.getStats().getViewCount();
+    }
+
+    public List<UserVideoSummaryResponseDTO> getVideosForChannel(
+            String userId,
+            String channelId
+    ) {
+
+        List<UserVideo> userVideos = userVideoRepository.findAllByUserId(
+                userId,
+                Sort.unsorted()
+        );
+
+        if (userVideos.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, Video> videosById = videoService
+                .getByIds(
+                        userVideos.stream()
+                                .map(UserVideo::getVideoId)
+                                .toList()
+                )
+                .stream()
+                .collect(Collectors.toMap(
+                        Video::getVideoId,
+                        Function.identity()
+                ));
+
+        return userVideos.stream()
+                .filter(userVideo -> {
+
+                    Video video = videosById.get(
+                            userVideo.getVideoId()
+                    );
+
+                    return video != null
+                            && channelId.equals(
+                            video.getChannelId()
+                    );
+                })
+                .map(userVideo -> {
+
+                    Video video = videosById.get(
+                            userVideo.getVideoId()
+                    );
+
+                    return userVideoMapper.toSummaryResponseDTO(
+                            userVideo,
+                            videoMapper.toSummaryDTO(video)
+                    );
+                })
+                .toList();
     }
 }

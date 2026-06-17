@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
@@ -24,6 +25,7 @@ public class UserVideo {
 
     private String note;
     private boolean watched;
+    private List<Timestamp> timestamps;
 
     Instant addedAt;
 }

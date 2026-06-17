@@ -27,7 +27,9 @@ public class Video {
     private String thumbnailUrl;
 
     private String channelId;
+    private String channelTitle;
     private Stats stats;
 
+    private Long durationSeconds;
     private Instant publishedAt;
 }

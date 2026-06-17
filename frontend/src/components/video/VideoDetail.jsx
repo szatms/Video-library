@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import YouTube from "react-youtube";
 import api from "../../services/api";
 
 function getSafeExternalUrl(rawUrl) {
@@ -148,7 +149,35 @@ function renderMarkdown(text) {
   return elements;
 }
 
-function VideoDetail({ userVideoId, onBack }) {
+function formatDate(date, dateFormat) {
+    const d = new Date(date);
+
+    switch (dateFormat) {
+      case "EU":
+        return d.toLocaleDateString("hu-HU");
+
+      case "US":
+        return d.toLocaleDateString("en-US");
+
+      case "ISO":
+      default:
+        return d.toISOString().split("T")[0];
+    }
+  }
+
+function formatTimestamp(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(secs).padStart(2, "0")}`;
+}
+
+function VideoDetail({ userVideoId, currentUser, onBack }) {
   const [videoDetail, setVideoDetail] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
@@ -157,6 +186,10 @@ function VideoDetail({ userVideoId, onBack }) {
   const [saveError, setSaveError] = useState("");
   const [loading, setLoading] = useState(true);
   const textareaRef = useRef(null);
+  const [timestamps, setTimestamps] = useState([]);
+  const [newTimestampSeconds, setNewTimestampSeconds] = useState("");
+  const [newTimestampLabel, setNewTimestampLabel] = useState("");
+  const playerRef = useRef(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -173,6 +206,7 @@ function VideoDetail({ userVideoId, onBack }) {
         });
         setVideoDetail(res.data);
         setNoteDraft(res.data.note ?? "");
+        setTimestamps(res.data.timestamps ?? []);
       } catch (err) {
         if (err.code === "ERR_CANCELED") {
           return;
@@ -199,7 +233,10 @@ function VideoDetail({ userVideoId, onBack }) {
   const stats = activeVideo?.stats;
   const currentNote = videoDetail?.note ?? "";
   const currentWatched = videoDetail?.watched ?? false;
-  const isDirty = noteDraft !== currentNote;
+  const isDirty =
+    noteDraft !== currentNote ||
+    JSON.stringify(timestamps) !==
+      JSON.stringify(videoDetail?.timestamps ?? []);
 
   const applyFormat = (prefix, suffix = "", placeholder = "text") => {
     const textarea = textareaRef.current;
@@ -238,15 +275,71 @@ function VideoDetail({ userVideoId, onBack }) {
       const res = await api.patch(`/uservideos/${userVideoId}`, {
         note: noteDraft,
         watched: currentWatched,
+        timestamps: timestamps,
       });
+
       setVideoDetail(res.data);
       setNoteDraft(res.data.note ?? "");
+      setTimestamps(res.data.timestamps ?? []);
+
       setSaveState("saved");
     } catch (err) {
       console.error("VIDEO NOTE SAVE ERROR:", err);
       setSaveError("Could not save note.");
       setSaveState("error");
     }
+  };
+
+  const handleAddTimestamp = async () => {
+    const seconds = Number(newTimestampSeconds);
+
+    if (Number.isNaN(seconds) || seconds < 0) {
+      return;
+    }
+
+    const updatedTimestamps = [
+      ...timestamps,
+      {
+        seconds,
+        label: newTimestampLabel.trim(),
+      },
+    ];
+
+    try {
+      const res = await api.patch(`/uservideos/${userVideoId}`, {
+        note: noteDraft,
+        watched: currentWatched,
+        timestamps: updatedTimestamps,
+      });
+
+      setTimestamps(res.data.timestamps ?? []);
+
+      setNewTimestampSeconds("");
+      setNewTimestampLabel("");
+    } catch (err) {
+      console.error("TIMESTAMP SAVE ERROR:", err);
+    }
+  };
+
+  const handleDeleteTimestamp = async (index) => {
+    const updatedTimestamps =
+      timestamps.filter((_, i) => i !== index);
+
+    try {
+      const res = await api.patch(`/uservideos/${userVideoId}`, {
+        note: noteDraft,
+        watched: currentWatched,
+        timestamps: updatedTimestamps,
+      });
+
+      setTimestamps(res.data.timestamps ?? []);
+    } catch (err) {
+      console.error("TIMESTAMP DELETE ERROR:", err);
+    }
+  };
+
+  const handlePlayerReady = (event) => {
+    playerRef.current = event.target;
   };
 
   if (loading) {
@@ -277,25 +370,143 @@ function VideoDetail({ userVideoId, onBack }) {
         </div>
 
         <div className="position-relative flex-grow-1 overflow-hidden">
-          <iframe
-            className="w-100 h-100 border-0"
-            src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
-            title={activeVideo.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allowFullScreen
-          ></iframe>
+          <YouTube
+            videoId={youtubeId}
+            onReady={handlePlayerReady}
+            className="w-100 h-100"
+            iframeClassName="w-100 h-100 border-0"
+            opts={{
+              width: "100%",
+              height: "100%",
+              playerVars: {
+                rel: 0,
+              },
+            }}
+          />
         </div>
 
         <div
-          style={{ minHeight: "120px", background: "rgba(0,0,0,0.5)" }}
-          className="p-3 d-flex align-items-center"
+          style={{ minHeight: "140px", background: "rgba(0,0,0,0.5)" }}
+          className="p-3"
         >
-          <div className="d-flex gap-4 flex-wrap">
-            <div>Views: {stats?.viewCount ?? "-"}</div>
-            <div>Likes: {stats?.likeCount ?? "-"}</div>
-            <div>
-              Published: {activeVideo.publishedAt ? new Date(activeVideo.publishedAt).toLocaleDateString() : "-"}
+          <div className="row">
+            <div className="col-md-4">
+              <div className="d-flex flex-column gap-2">
+                <div>Views: {stats?.viewCount ?? "-"}</div>
+                <div>Likes: {stats?.likeCount ?? "-"}</div>
+
+                <div>
+                  Published: {
+                    activeVideo.publishedAt
+                      ? formatDate(
+                          activeVideo.publishedAt,
+                          currentUser?.dateFormat
+                        )
+                      : "-"
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-8">
+              <div className="fw-bold mb-2">
+                Timestamps
+              </div>
+
+              <div className="row g-2 mb-3">
+
+                <div className="col-3">
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    placeholder="Sec"
+                    value={newTimestampSeconds}
+                    onChange={(e) => setNewTimestampSeconds(e.target.value)}
+                  />
+                </div>
+
+                <div className="col">
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Label"
+                    value={newTimestampLabel}
+                    onChange={(e) => setNewTimestampLabel(e.target.value)}
+                  />
+                </div>
+
+                <div className="col-auto">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() =>
+                      setNewTimestampSeconds(
+                        Math.floor(
+                          playerRef.current.getCurrentTime()
+                        )
+                      )
+                    }
+                  >
+                    Use Current
+                  </button>
+                </div>
+
+                <div className="col-auto">
+                  <button
+                    type="button"
+                    className="btn btn-success btn-sm"
+                    onClick={handleAddTimestamp}
+                  >
+                    Add
+                  </button>
+                </div>
+
+              </div>
+
+              <div
+                style={{
+                  maxHeight: "90px",
+                  overflowY: "auto"
+                }}
+              >
+                {timestamps.length === 0 ? (
+                  <div className="text-muted small">
+                    No timestamps yet.
+                  </div>
+                ) : (
+                  timestamps.map((timestamp, index) => (
+                    <div
+                      key={index}
+                      className="d-flex justify-content-between align-items-center mb-1"
+                    >
+                      <span
+                        className="text-decoration-underline"
+                        style={{
+                          cursor: "pointer"
+                        }}
+                        onClick={() => {
+                          playerRef.current.seekTo(timestamp.seconds);
+                          playerRef.current.playVideo();
+                        }}
+                      >
+                        <strong>
+                          {formatTimestamp(timestamp.seconds)}
+                        </strong>
+                        {" - "}
+                        {timestamp.label}
+                      </span>
+
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => handleDeleteTimestamp(index)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>

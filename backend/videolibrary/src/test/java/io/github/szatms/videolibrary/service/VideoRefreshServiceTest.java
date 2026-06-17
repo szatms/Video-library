@@ -52,8 +52,7 @@ class VideoRefreshServiceTest {
                 .publishedAt(Instant.now())
                 .build();
 
-        PythonVideoResponseDTO successResponse = new PythonVideoResponseDTO();
-        successResponse.setItems(List.of(createItem("youtube-1", "Updated title")));
+        PythonVideoResponseDTO successResponse = createResponse("youtube-1", "Updated title");
 
         when(videoRepository.count()).thenReturn(2L);
         when(videoRepository.findAll(PageRequest.of(0, 50, Sort.by("videoId"))))
@@ -66,7 +65,7 @@ class VideoRefreshServiceTest {
 
         ArgumentCaptor<Video> savedVideoCaptor = ArgumentCaptor.forClass(Video.class);
         verify(videoRepository).save(savedVideoCaptor.capture());
-        verify(videoFactory).updateEntityFromItem(firstVideo, successResponse.getItems().get(0));
+        verify(videoFactory).updateEntityFromItem(firstVideo, successResponse);
 
         assertEquals(VideoRefreshService.VideoRefreshJobStatus.COMPLETED_WITH_ERRORS, job.getStatus());
         assertEquals(2, job.getProcessedVideos());
@@ -78,29 +77,17 @@ class VideoRefreshServiceTest {
         assertEquals("video-1", savedVideoCaptor.getValue().getVideoId());
     }
 
-    private PythonVideoResponseDTO.Item createItem(String youtubeId, String title) {
-        PythonVideoResponseDTO.Item item = new PythonVideoResponseDTO.Item();
-        item.setId(youtubeId);
-
-        PythonVideoResponseDTO.Snippet snippet = new PythonVideoResponseDTO.Snippet();
-        snippet.setTitle(title);
-        snippet.setDescription("description");
-        snippet.setChannelId("channel-1");
-        snippet.setPublishedAt("2024-01-01T00:00:00Z");
-
-        PythonVideoResponseDTO.Thumbnail thumbnail = new PythonVideoResponseDTO.Thumbnail();
-        thumbnail.setUrl("https://example.com/thumb.jpg");
-
-        PythonVideoResponseDTO.Thumbnails thumbnails = new PythonVideoResponseDTO.Thumbnails();
-        thumbnails.setHigh(thumbnail);
-        snippet.setThumbnails(thumbnails);
-
-        PythonVideoResponseDTO.Statistics statistics = new PythonVideoResponseDTO.Statistics();
-        statistics.setViewCount("10");
-        statistics.setLikeCount("2");
-
-        item.setSnippet(snippet);
-        item.setStatistics(statistics);
-        return item;
+    private PythonVideoResponseDTO createResponse(String youtubeId, String title) {
+        PythonVideoResponseDTO response = new PythonVideoResponseDTO();
+        response.setId(youtubeId);
+        response.setTitle(title);
+        response.setDescription("description");
+        response.setChannelId("channel-1");
+        response.setThumbnail("https://example.com/thumb.jpg");
+        response.setDuration(123L);
+        response.setViewCount(10L);
+        response.setLikeCount(2L);
+        response.setTimestamp(1704067200L);
+        return response;
     }
 }

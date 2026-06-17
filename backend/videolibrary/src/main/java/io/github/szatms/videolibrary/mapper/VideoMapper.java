@@ -19,7 +19,9 @@ public class VideoMapper {
         dto.setDescription(video.getDescription());
         dto.setThumbnailUrl(video.getThumbnailUrl());
         dto.setChannelId(video.getChannelId());
+        dto.setChannelTitle(video.getChannelTitle());
         dto.setStats(video.getStats());
+        dto.setDurationSeconds(video.getDurationSeconds());
         dto.setPublishedAt(video.getPublishedAt());
 
         return dto;
@@ -36,7 +38,9 @@ public class VideoMapper {
         dto.setTitle(video.getTitle());
         dto.setThumbnailUrl(video.getThumbnailUrl());
         dto.setChannelId(video.getChannelId());
+        dto.setChannelTitle(video.getChannelTitle());
         dto.setViewCount(video.getStats() != null ? video.getStats().getViewCount() : 0L);
+        dto.setDurationSeconds(video.getDurationSeconds());
 
         return dto;
     }

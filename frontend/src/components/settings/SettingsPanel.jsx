@@ -269,6 +269,86 @@ function VideosAdminPanel() {
   );
 }
 
+function PreferencesPanel({ currentUser, setCurrentUser }) {
+  const [dateFormat, setDateFormat] = useState(
+    currentUser?.dateFormat ?? "ISO"
+  );
+
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMessage("");
+
+    try {
+      const response = await api.put("/users/me", {
+          dateFormat
+      });
+
+      setCurrentUser(response.data);
+
+      setMessage("Preferences saved.");
+    } catch (err) {
+      console.error("PREFERENCES SAVE ERROR:", err);
+      setMessage("Could not save preferences.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="p-4"
+      style={{
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: "8px",
+      }}
+    >
+      <h5 className="mb-4">Preferences</h5>
+
+      <div className="mb-3">
+        <label className="form-label">
+          Date Format
+        </label>
+
+        <select
+          className="form-select"
+          value={dateFormat}
+          onChange={(e) => setDateFormat(e.target.value)}
+        >
+          <option value="ISO">
+            ISO (2026-06-10)
+          </option>
+
+          <option value="EU">
+            European (10/06/2026)
+          </option>
+
+          <option value="US">
+            US (06/10/2026)
+          </option>
+        </select>
+      </div>
+
+      <button
+        className="btn btn-success"
+        onClick={handleSave}
+        disabled={saving}
+      >
+        {saving ? "Saving..." : "Save"}
+      </button>
+
+      {message && (
+        <div className="mt-3">
+          {message}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlaceholderPanel({ title, description }) {
   return (
     <div
@@ -285,7 +365,7 @@ function PlaceholderPanel({ title, description }) {
   );
 }
 
-function SettingsPanel({ currentUser, loadingUser, userError, onBack }) {
+function SettingsPanel({ currentUser, setCurrentUser, loadingUser, userError, onBack }) {
   const privileged = isPrivilegedUser(currentUser);
   const menuItems = useMemo(() => (privileged ? ADMIN_MENUS : USER_MENUS), [privileged]);
   const [activeMenu, setActiveMenu] = useState("Preferences");
@@ -322,9 +402,9 @@ function SettingsPanel({ currentUser, loadingUser, userError, onBack }) {
 
     if (activeMenu === "Preferences") {
       return (
-        <PlaceholderPanel
-          title="Preferences"
-          description="Preference settings live here. The page is wired and role-aware, so additional controls can be added without reworking navigation."
+        <PreferencesPanel
+            currentUser={currentUser}
+            setCurrentUser={setCurrentUser}
         />
       );
     }

@@ -1,5 +1,6 @@
 package io.github.szatms.videolibrary.mapper;
 
+import io.github.szatms.videolibrary.model.uservideomodel.Timestamp;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoResponseDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoSummaryResponseDTO;
@@ -7,6 +8,8 @@ import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoUpdateDTO
 import io.github.szatms.videolibrary.model.videomodel.dto.VideoResponseDTO;
 import io.github.szatms.videolibrary.model.videomodel.dto.VideoSummaryDTO;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class UserVideoMapper {
@@ -19,6 +22,7 @@ public class UserVideoMapper {
         dto.setId(userVideo.getId());
         dto.setWatched(userVideo.isWatched());
         dto.setNote(userVideo.getNote());
+        dto.setTimestamps(userVideo.getTimestamps());
         dto.setAddedAt(userVideo.getAddedAt());
         dto.setVideo(videoDto);
         return dto;
@@ -45,6 +49,11 @@ public class UserVideoMapper {
         if (dto.getNote() != null) {
             String note = dto.getNote().trim();
             entity.setNote(note.isEmpty() ? null : note);
+        }
+
+        if (dto.getTimestamps() != null) {
+            List<Timestamp> timestamps = dto.getTimestamps();
+            entity.setTimestamps(timestamps);
         }
 
         entity.setWatched(dto.isWatched());

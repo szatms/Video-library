@@ -2,9 +2,12 @@ package io.github.szatms.videolibrary.model.videomodel;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface VideoRepository extends MongoRepository<Video, String> {
     Optional<Video> findByYoutubeId(String youtubeId);
     boolean existsByYoutubeId(String youtubeId);
+    List<Video> findByVideoIdIn(Collection<String> videoIds);
 }

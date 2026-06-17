@@ -24,6 +24,7 @@ public class User {
     private String passwordHash;
 
     private Role role;
+    private DateFormatPreference dateFormat;
     private LocalDateTime createdAt;
     private Boolean enabled;
 }

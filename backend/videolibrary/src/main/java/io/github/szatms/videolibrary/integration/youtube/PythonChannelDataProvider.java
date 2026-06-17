@@ -1,23 +1,22 @@
 package io.github.szatms.videolibrary.integration.youtube;
 
-import io.github.szatms.videolibrary.integration.youtube.dto.PythonVideoResponseDTO;
+import io.github.szatms.videolibrary.integration.youtube.dto.PythonChannelResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
 @RequiredArgsConstructor
-public class PythonVideoDataProvider {
-
+public class PythonChannelDataProvider {
     private final RestClient restClient;
 
-    public PythonVideoResponseDTO load(String youtubeId) {
+    public PythonChannelResponseDTO load(String channelId) {
         return restClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/ytdlp/video/shorter")
-                        .queryParam("url", youtubeId)
+                        .path("/youtube/channel")
+                        .queryParam("url", channelId)
                         .build())
                 .retrieve()
-                .body(PythonVideoResponseDTO.class);
+                .body(PythonChannelResponseDTO.class);
     }
 }

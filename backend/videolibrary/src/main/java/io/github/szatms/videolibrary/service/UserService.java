@@ -50,6 +50,10 @@ public class UserService {
             user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
         }
 
+        if (dto.getDateFormat() != null) {
+            user.setDateFormat(dto.getDateFormat());
+        }
+
         userRepository.save(user);
         return userMapper.toResponseDTO(user);
     }

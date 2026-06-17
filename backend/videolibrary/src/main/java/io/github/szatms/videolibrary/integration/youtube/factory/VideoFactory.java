@@ -10,67 +10,77 @@ import java.time.Instant;
 @Component
 public class VideoFactory {
 
-    public Video fromItem(PythonVideoResponseDTO.Item item){
-        if (item == null || item.getSnippet() == null) throw new IllegalArgumentException("Invalid video data!");
+    public Video fromItem(PythonVideoResponseDTO item){
+        validate(item);
 
         return Video.builder()
                 .youtubeId(item.getId())
-                .title(item.getSnippet().getTitle())
-                .description(item.getSnippet().getDescription())
+                .title(item.getTitle())
+                .description(item.getDescription())
                 .thumbnailUrl(extractThumbnail(item))
-                .channelId(item.getSnippet().getChannelId())
+                .channelId(item.getChannelId())
+                .channelTitle(item.getChannelName())
+                .durationSeconds(extractDurationSeconds(item))
                 .publishedAt(parsePublishedAt(item))
-                .stats(mapStats(item.getStatistics()))
+                .stats(mapStats(item))
                 .build();
     }
 
-    public void updateEntityFromItem(Video video, PythonVideoResponseDTO.Item item) {
-        if (video == null || item == null || item.getSnippet() == null) {
+    public void updateEntityFromItem(Video video, PythonVideoResponseDTO item) {
+        if (video == null) {
             throw new IllegalArgumentException("Invalid video data!");
         }
+        validate(item);
 
         video.setYoutubeId(item.getId());
-        video.setTitle(item.getSnippet().getTitle());
-        video.setDescription(item.getSnippet().getDescription());
+        video.setTitle(item.getTitle());
+        video.setDescription(item.getDescription());
         video.setThumbnailUrl(extractThumbnail(item));
-        video.setChannelId(item.getSnippet().getChannelId());
+        video.setChannelId(item.getChannelId());
+        video.setChannelTitle(item.getChannelName());
+        video.setDurationSeconds(extractDurationSeconds(item));
         video.setPublishedAt(parsePublishedAt(item));
-        video.setStats(mapStats(item.getStatistics()));
+        video.setStats(mapStats(item));
     }
 
     //=========================
     // HELPER METHODS
     //=========================
-    private Instant parsePublishedAt(PythonVideoResponseDTO.Item item) {
+
+    private void validate(PythonVideoResponseDTO item) {
+        if (item == null || item.getId() == null || item.getId().isBlank()) {
+            throw new IllegalArgumentException("Invalid video data!");
+        }
+    }
+
+    private Instant parsePublishedAt(PythonVideoResponseDTO item) {
         try {
-            return Instant.parse(item.getSnippet().getPublishedAt());
+            if (item.getTimestamp() == null) {
+                return null;
+            }
+            return Instant.ofEpochSecond(item.getTimestamp());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private String extractThumbnail(PythonVideoResponseDTO.Item item) {
-        if (item.getSnippet().getThumbnails() == null) return null;
-        if (item.getSnippet().getThumbnails().getHigh() == null) return null;
-
-        return item.getSnippet().getThumbnails().getHigh().getUrl();
+    private String extractThumbnail(PythonVideoResponseDTO item) {
+        return item.getThumbnail();
     }
 
-    private Stats mapStats(PythonVideoResponseDTO.Statistics stats) {
-        if (stats == null) return null;
+    private Long extractDurationSeconds(PythonVideoResponseDTO item) {
+        return item.getDuration();
+    }
 
+    private Stats mapStats(PythonVideoResponseDTO item) {
         return Stats.builder()
-                .viewCount(parseLong(stats.getViewCount()))
-                .likeCount(parseLong(stats.getLikeCount()))
+                .viewCount(parseLong(item.getViewCount()))
+                .likeCount(parseLong(item.getLikeCount()))
                 .updatedAt(Instant.now())
                 .build();
     }
 
-    private long parseLong(String value) {
-        try {
-            return Long.parseLong(value);
-        } catch (Exception e) {
-            return 0;
-        }
+    private long parseLong(Long value) {
+        return value != null ? value : 0L;
     }
 }

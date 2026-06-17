@@ -18,19 +18,22 @@ public class VideoService {
     private final VideoRepository videoRepository;
     private final VideoFactory videoFactory;
     private final PythonVideoDataProvider provider;
+    private final ChannelService channelService;
 
     public Video getOrCreateVideo(String youtubeId) {
         return videoRepository.findByYoutubeId(youtubeId)
                 .orElseGet(() -> {
                     try {
                         var response = provider.load(youtubeId);
-                        if (response.getItems() == null || response.getItems().isEmpty()) {
+                        if (response == null || response.getId() == null || response.getId().isBlank()) {
                             throw new IllegalArgumentException("No video found for youtubeId: " + youtubeId);
                         }
 
-                        var item = response.getItems().get(0);
+                        channelService.getOrCreateChannel(
+                                response.getChannelId()
+                        );
 
-                        Video video = videoFactory.fromItem(item);
+                        Video video = videoFactory.fromItem(response);
                         video.setYoutubeId(youtubeId);
                         return videoRepository.save(video);
 

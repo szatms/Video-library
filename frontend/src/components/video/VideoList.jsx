@@ -8,6 +8,54 @@ const SORT_OPTIONS = [
   { value: "WATCHED", label: "Watched" },
 ];
 
+const formatDuration = (durationSeconds) => {
+  if (durationSeconds == null || Number.isNaN(durationSeconds)) {
+    return null;
+  }
+
+  const totalSeconds = Math.max(0, Math.floor(durationSeconds));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};
+
+const formatAddedAt = (addedAt) => {
+  if (!addedAt) {
+    return null;
+  }
+
+  const addedAtMs = new Date(addedAt).getTime();
+  if (Number.isNaN(addedAtMs)) {
+    return null;
+  }
+
+  const elapsedMs = Date.now() - addedAtMs;
+  const elapsedMinutes = Math.max(0, Math.floor(elapsedMs / 60000));
+
+  if (elapsedMinutes < 60) {
+    return elapsedMinutes <= 1 ? "1 minute ago" : `${elapsedMinutes} minutes ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return elapsedHours === 1 ? "1 hour ago" : `${elapsedHours} hours ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  if (elapsedDays < 7) {
+    return elapsedDays === 1 ? "1 day ago" : `${elapsedDays} days ago`;
+  }
+
+  const elapsedWeeks = Math.floor(elapsedDays / 7);
+  return elapsedWeeks === 1 ? "1 week ago" : `${elapsedWeeks} weeks ago`;
+};
+
 const toSummaryItem = (userVideo) => ({
   id: userVideo.id,
   watched: userVideo.watched,
@@ -19,7 +67,9 @@ const toSummaryItem = (userVideo) => ({
     title: userVideo.video.title,
     thumbnailUrl: userVideo.video.thumbnailUrl,
     channelId: userVideo.video.channelId,
+    channelTitle: userVideo.video.channelTitle,
     viewCount: userVideo.video.viewCount ?? 0,
+    durationSeconds: userVideo.video.durationSeconds ?? null,
   },
 });
 
@@ -229,9 +279,17 @@ function VideoList() {
 
               <div className="min-w-0">
                 <div className="fw-semibold">{v.video.title}</div>
+                {v.video.channelTitle && (
+                  <div className="video-list-channel text-truncate">{v.video.channelTitle}</div>
+                )}
                 <div className="d-flex flex-wrap gap-3 mt-2 text-muted small">
                   <span>{v.watched ? "Watched" : "Unwatched"}</span>
-                  <span>{new Date(v.addedAt).toLocaleDateString()}</span>
+                  {formatAddedAt(v.addedAt) && (
+                    <span>Added: {formatAddedAt(v.addedAt)}</span>
+                  )}
+                  {formatDuration(v.video.durationSeconds) && (
+                    <span>{formatDuration(v.video.durationSeconds)}</span>
+                  )}
                   <span>{(v.video.viewCount ?? 0).toLocaleString()} views</span>
                 </div>
               </div>

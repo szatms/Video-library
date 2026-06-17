@@ -79,11 +79,11 @@ public class VideoRefreshService {
 
         try {
             PythonVideoResponseDTO response = provider.load(video.getYoutubeId());
-            if (response.getItems() == null || response.getItems().isEmpty()) {
+            if (response == null || response.getId() == null || response.getId().isBlank()) {
                 throw new IllegalArgumentException("No video found for youtubeId: " + video.getYoutubeId());
             }
 
-            videoFactory.updateEntityFromItem(video, response.getItems().get(0));
+            videoFactory.updateEntityFromItem(video, response);
             videoRepository.save(video);
             job.markVideoUpdated();
         } catch (Exception e) {

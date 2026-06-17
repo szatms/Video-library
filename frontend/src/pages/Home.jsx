@@ -6,6 +6,9 @@ import api from "../services/api";
 import VideoList from "../components/video/VideoList";
 import VideoDetail from "../components/video/VideoDetail";
 import SettingsPanel from "../components/settings/SettingsPanel";
+import ChannelList from "../components/channel/ChannelList";
+import ChannelDetail from "../components/channel/ChannelDetail";
+import TrashList from "../components/trash/TrashList";
 
 function Home() {
   const navigate = useNavigate();
@@ -15,6 +18,11 @@ function Home() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [userError, setUserError] = useState("");
+
+  const [selectedChannelId, setSelectedChannelId] = useState(null);
+  const [selectedChannelVideoId, setSelectedChannelVideoId] = useState(null);
+  const [selectedVideoId, setSelectedVideoId] = useState(null);
+  const [videoSource, setVideoSource] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -60,6 +68,39 @@ function Home() {
     navigate("/home");
   };
 
+  const handleOpenChannels = () => {
+    setActiveSection("channels");
+    navigate("/home");
+  };
+
+  const handleOpenTrash = () => {
+    setActiveSection("trash");
+    navigate("/home");
+  };
+
+  const handleOpenChannel = (channelId) => {
+    setSelectedChannelId(channelId);
+  };
+
+  const handleBackToChannels = () => {
+    setSelectedChannelId(null);
+  };
+
+  const handleOpenChannelVideo = (videoId) => {
+    setVideoSource("channel");
+    setSelectedVideoId(videoId);
+  };
+
+  const handleBackFromVideo = () => {
+    if (videoSource === "channel") {
+      setSelectedVideoId(null);
+      return;
+    }
+
+    setSelectedVideoId(null);
+    setSelectedChannelId(null);
+  };
+
   return (
     <div className="d-flex vh-100 text-light">
 
@@ -101,8 +142,25 @@ function Home() {
             Videos
           </li>
 
-          <li style={{ opacity: 0.5 }}>Channels</li>
+          <li
+            className={`${activeSection === "channels" ? "text-decoration-underline" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={handleOpenChannels}
+          >
+            Channels
+          </li>
+
           <li style={{ opacity: 0.5 }}>Playlists</li>
+
+          <hr className="my-3" />
+
+          <li
+            className={`${activeSection === "trash" ? "text-decoration-underline" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={handleOpenTrash}
+          >
+            Recycling Bin
+          </li>
         </ul>
 
         <hr />
@@ -138,6 +196,7 @@ function Home() {
         {activeSection === "videos" && videoId && (
           <VideoDetail
             userVideoId={videoId}
+            currentUser={currentUser}
             onBack={() => navigate("/home")}
           />
         )}
@@ -145,10 +204,47 @@ function Home() {
         {activeSection === "settings" && (
           <SettingsPanel
             currentUser={currentUser}
+            setCurrentUser={setCurrentUser}
             loadingUser={loadingUser}
             userError={userError}
             onBack={handleGoHome}
           />
+        )}
+
+        {/* CHANNEL LIST */}
+        {activeSection === "channels" &&
+         !selectedChannelId &&
+         !selectedChannelVideoId && (
+          <ChannelList
+            onOpenChannel={handleOpenChannel}
+          />
+        )}
+
+        {/* CHANNEL DETAIL */}
+        {activeSection === "channels" &&
+         selectedChannelId &&
+         !selectedChannelVideoId && (
+          <ChannelDetail
+            channelId={selectedChannelId}
+            onBack={handleBackToChannels}
+            onOpenVideo={(userVideoId) =>
+              setSelectedChannelVideoId(userVideoId)
+            }
+          />
+        )}
+
+        {/* VIDEO DETAIL FROM CHANNEL */}
+        {activeSection === "channels" &&
+         selectedChannelVideoId && (
+          <VideoDetail
+            userVideoId={selectedChannelVideoId}
+            currentUser={currentUser}
+            onBack={() => setSelectedChannelVideoId(null)}
+          />
+        )}
+
+        {activeSection === "trash" && (
+          <TrashList />
         )}
 
       </div>
