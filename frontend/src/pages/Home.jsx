@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { logout } from "../services/authService";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation, Outlet } from "react-router-dom";
 import api from "../services/api";
 
 import VideoList from "../components/video/VideoList";
@@ -12,17 +12,15 @@ import TrashList from "../components/trash/TrashList";
 
 function Home() {
   const navigate = useNavigate();
-  const { videoId } = useParams();
+  const location = useLocation();
+  const { videoId, channelId } = useParams();
 
-  const [activeSection, setActiveSection] = useState("videos");
+  // State for channel navigation (keeping for compatibility)
+  const [selectedChannelId, setSelectedChannelId] = useState(null);
+  const [selectedChannelVideoId, setSelectedChannelVideoId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [userError, setUserError] = useState("");
-
-  const [selectedChannelId, setSelectedChannelId] = useState(null);
-  const [selectedChannelVideoId, setSelectedChannelVideoId] = useState(null);
-  const [selectedVideoId, setSelectedVideoId] = useState(null);
-  const [videoSource, setVideoSource] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -53,52 +51,58 @@ function Home() {
     };
   }, []);
 
+  // Determine current section from URL to keep sidebar active state correct
+  const isVideoDetail = !!videoId;
+  const isVideosList = location.pathname === "/home/videos" || location.pathname === "/home";
+  const isChannelsList = location.pathname === "/home/channels" || 
+                        (location.pathname.startsWith("/home/channels/") && !videoId);
+  const isChannelDetail = location.pathname.startsWith("/home/channels/") && videoId;
+  const isSettings = location.pathname === "/home/settings";
+  const isTrash = location.pathname === "/home/trash";
+
   const handleLogout = () => {
     logout();
     navigate("/", { replace: true });
   };
 
   const handleGoHome = () => {
-    setActiveSection("videos");
     navigate("/home");
   };
 
   const handleOpenSettings = () => {
-    setActiveSection("settings");
-    navigate("/home");
+    navigate("/home/settings");
   };
 
   const handleOpenChannels = () => {
-    setActiveSection("channels");
-    navigate("/home");
+    navigate("/home/channels");
   };
 
   const handleOpenTrash = () => {
-    setActiveSection("trash");
-    navigate("/home");
+    navigate("/home/trash");
   };
 
   const handleOpenChannel = (channelId) => {
     setSelectedChannelId(channelId);
+    navigate(`/home/channels/${channelId}`);
   };
 
   const handleBackToChannels = () => {
     setSelectedChannelId(null);
+    navigate("/home/channels");
   };
 
   const handleOpenChannelVideo = (videoId) => {
-    setVideoSource("channel");
-    setSelectedVideoId(videoId);
+    setSelectedChannelVideoId(videoId);
+    if (selectedChannelId) {
+      navigate(`/home/channels/${selectedChannelId}/${videoId}`);
+    } else {
+      navigate(`/home/channels/${channelId}/${videoId}`);
+    }
   };
 
   const handleBackFromVideo = () => {
-    if (videoSource === "channel") {
-      setSelectedVideoId(null);
-      return;
-    }
-
-    setSelectedVideoId(null);
-    setSelectedChannelId(null);
+    // Use browser history to go back
+    navigate(-1);
   };
 
   return (
@@ -132,18 +136,15 @@ function Home() {
         <h6 className="text-white fw-bold">Library</h6>
         <ul className="list-unstyled mb-3">
           <li
-            className={`mb-1 ${activeSection === "videos" ? "text-decoration-underline" : ""}`}
+            className={`mb-1 ${isVideosList ? "text-decoration-underline" : ""}`}
             style={{ cursor: "pointer" }}
-            onClick={() => {
-              setActiveSection("videos");
-              navigate("/home");
-            }}
+            onClick={() => navigate("/home/videos")}
           >
             Videos
           </li>
 
           <li
-            className={`${activeSection === "channels" ? "text-decoration-underline" : ""}`}
+            className={`${isChannelsList || isChannelDetail ? "text-decoration-underline" : ""}`}
             style={{ cursor: "pointer" }}
             onClick={handleOpenChannels}
           >
@@ -155,7 +156,7 @@ function Home() {
           <hr className="my-3" />
 
           <li
-            className={`${activeSection === "trash" ? "text-decoration-underline" : ""}`}
+            className={`${isTrash ? "text-decoration-underline" : ""}`}
             style={{ cursor: "pointer" }}
             onClick={handleOpenTrash}
           >
@@ -170,7 +171,7 @@ function Home() {
         <ul className="list-unstyled mb-3">
           <li style={{ opacity: 0.5 }}>Profile</li>
           <li
-            className={`${activeSection === "settings" ? "text-decoration-underline" : ""}`}
+            className={`${isSettings ? "text-decoration-underline" : ""}`}
             style={{ cursor: "pointer" }}
             onClick={handleOpenSettings}
           >
@@ -185,68 +186,9 @@ function Home() {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT - Use Outlet for child routes */}
       <div className="flex-grow-1 d-flex flex-column">
-
-        {/* VIDEOS SECTION */}
-        {activeSection === "videos" && !videoId && (
-          <VideoList />
-        )}
-
-        {activeSection === "videos" && videoId && (
-          <VideoDetail
-            userVideoId={videoId}
-            currentUser={currentUser}
-            onBack={() => navigate("/home")}
-          />
-        )}
-
-        {activeSection === "settings" && (
-          <SettingsPanel
-            currentUser={currentUser}
-            setCurrentUser={setCurrentUser}
-            loadingUser={loadingUser}
-            userError={userError}
-            onBack={handleGoHome}
-          />
-        )}
-
-        {/* CHANNEL LIST */}
-        {activeSection === "channels" &&
-         !selectedChannelId &&
-         !selectedChannelVideoId && (
-          <ChannelList
-            onOpenChannel={handleOpenChannel}
-          />
-        )}
-
-        {/* CHANNEL DETAIL */}
-        {activeSection === "channels" &&
-         selectedChannelId &&
-         !selectedChannelVideoId && (
-          <ChannelDetail
-            channelId={selectedChannelId}
-            onBack={handleBackToChannels}
-            onOpenVideo={(userVideoId) =>
-              setSelectedChannelVideoId(userVideoId)
-            }
-          />
-        )}
-
-        {/* VIDEO DETAIL FROM CHANNEL */}
-        {activeSection === "channels" &&
-         selectedChannelVideoId && (
-          <VideoDetail
-            userVideoId={selectedChannelVideoId}
-            currentUser={currentUser}
-            onBack={() => setSelectedChannelVideoId(null)}
-          />
-        )}
-
-        {activeSection === "trash" && (
-          <TrashList />
-        )}
-
+        <Outlet />
       </div>
     </div>
   );

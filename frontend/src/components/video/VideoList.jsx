@@ -268,7 +268,7 @@ function VideoList() {
           <div
             key={v.id}
             className="video-list-card d-flex gap-3 align-items-start justify-content-between"
-            onClick={() => navigate(`/home/${v.id}`)}
+            onClick={() => navigate(`/home/videos/${v.id}`)}
           >
             <div className="d-flex gap-3 align-items-start min-w-0 flex-grow-1">
               <img

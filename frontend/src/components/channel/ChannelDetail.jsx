@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 
-function ChannelDetail({channelId, onBack, onOpenVideo}) {
+function ChannelDetail() {
+  const navigate = useNavigate();
+  const { channelId, videoId } = useParams();
   const [channel, setChannel] = useState(null);
   const [videos, setVideos] = useState([]);
   const [error, setError] = useState("");
@@ -35,12 +38,20 @@ function ChannelDetail({channelId, onBack, onOpenVideo}) {
     }
   };
 
+  const handleOpenVideo = useCallback((videoId) => {
+    navigate(`/home/channels/${channelId}/${videoId}`);
+  }, [channelId, navigate]);
+  
+  const handleBack = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
   if (error) {
     return (
       <div className="p-4">
         <button
           className="btn btn-secondary mb-4"
-          onClick={onBack}
+          onClick={handleBack}
         >
           Back
         </button>
@@ -65,7 +76,7 @@ function ChannelDetail({channelId, onBack, onOpenVideo}) {
 
       <button
         className="btn btn-secondary mb-4"
-        onClick={onBack}
+        onClick={handleBack}
       >
         Back
       </button>
@@ -115,7 +126,7 @@ function ChannelDetail({channelId, onBack, onOpenVideo}) {
               <div
                 key={video.id}
                 className="video-list-card ..."
-                onClick={() => onOpenVideo(video.id)}
+                onClick={() => handleOpenVideo(video.id)}
                 style={{ cursor: "pointer" }}
               >
 

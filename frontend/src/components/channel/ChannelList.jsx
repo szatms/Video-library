@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import ChannelCard from "./ChannelCard";
 
-function ChannelList({ onOpenChannel }) {
+function ChannelList() {
+  const navigate = useNavigate();
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,7 +70,7 @@ function ChannelList({ onOpenChannel }) {
               key={channel.channelId}
               channel={channel}
               onClick={() =>
-                onOpenChannel(channel.channelId)
+                navigate(`/home/channels/${channel.channelId}`)
               }
             />
           ))}
