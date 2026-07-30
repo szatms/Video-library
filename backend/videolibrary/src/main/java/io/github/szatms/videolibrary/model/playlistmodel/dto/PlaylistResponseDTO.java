@@ -1,21 +1,12 @@
-package io.github.szatms.videolibrary.model.playlistmodel;
+package io.github.szatms.videolibrary.model.playlistmodel.dto;
 
 import io.github.szatms.videolibrary.model.playlistitemmodel.PlaylistItem;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import lombok.Data;
 
 import java.util.List;
 
-@Getter
-@Setter
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@Document(collection = "playlists")
-public class Playlist {
-    @Id
+@Data
+public class PlaylistResponseDTO {
     private String id;
     private String youtubeId;
     private String channelId;

@@ -104,7 +104,7 @@ function ChannelDetail() {
           </div>
 
           <div className="text-light">
-            {channel.channelStats?.subscriberCount?.toLocaleString()}
+            {channel.channelStats?.subCount?.toLocaleString()}
             {" "}subscribers
           </div>
 

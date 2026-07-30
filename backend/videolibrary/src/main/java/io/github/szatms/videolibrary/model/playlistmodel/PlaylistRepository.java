@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface PlaylistRepository extends MongoRepository<Playlist, String> {
     Optional<Playlist> findByYoutubeId(String youtubeId);
     boolean existsByYoutubeId(String youtubeId);
-    List<Playlist> findByPlaylistIdIn(Collection<String> playlistIds);
+    List<Playlist> findByYoutubeIdIn(Collection<String> youtubeIds);
 }

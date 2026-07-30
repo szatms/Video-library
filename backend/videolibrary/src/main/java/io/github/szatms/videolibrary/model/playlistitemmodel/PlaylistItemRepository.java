@@ -10,7 +10,7 @@ public interface PlaylistItemRepository extends MongoRepository<PlaylistItem, St
     Optional<PlaylistItem> findByPlaylistId(String playlistId);
 
     boolean existsByVideoId(String videoId);
-    boolean existByPlaylistId(String playlistId);
+    boolean existsByPlaylistId(String playlistId);
 
     List<PlaylistItem> findByVideoIdIn(String videoIds);
     List<PlaylistItem> findByPlaylistIdIn(String playlistIds);
