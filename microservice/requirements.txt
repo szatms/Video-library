@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+yt-dlp
+pydantic
+python-dotenv
+requests
+pydantic_settings
