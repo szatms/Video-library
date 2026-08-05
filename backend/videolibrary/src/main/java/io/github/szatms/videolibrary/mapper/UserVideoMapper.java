@@ -23,6 +23,7 @@ public class UserVideoMapper {
         dto.setWatched(userVideo.isWatched());
         dto.setNote(userVideo.getNote());
         dto.setTimestamps(userVideo.getTimestamps());
+        dto.setInPlaylist(userVideo.isInPlaylist());
         dto.setAddedAt(userVideo.getAddedAt());
         dto.setVideo(videoDto);
         return dto;
@@ -34,6 +35,7 @@ public class UserVideoMapper {
         dto.setId(userVideo.getId());
         dto.setWatched(userVideo.isWatched());
         dto.setNote(userVideo.getNote());
+        dto.setInPlaylist(userVideo.isInPlaylist());
         dto.setAddedAt(userVideo.getAddedAt());
         dto.setVideo(videoDto);
         return dto;

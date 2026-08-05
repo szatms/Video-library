@@ -11,6 +11,7 @@ public class UserVideoSummaryResponseDTO {
 
     private boolean watched;
     private String note;
+    private boolean inPlaylist;
 
     private Instant addedAt;
 

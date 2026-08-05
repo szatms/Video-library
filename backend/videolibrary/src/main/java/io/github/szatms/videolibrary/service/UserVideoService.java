@@ -2,6 +2,8 @@ package io.github.szatms.videolibrary.service;
 
 import io.github.szatms.videolibrary.mapper.UserVideoMapper;
 import io.github.szatms.videolibrary.mapper.VideoMapper;
+import io.github.szatms.videolibrary.model.playlistitemmodel.PlaylistItem;
+import io.github.szatms.videolibrary.model.playlistitemmodel.PlaylistItemRepository;
 import io.github.szatms.videolibrary.model.usermodel.UserRepository;
 import io.github.szatms.videolibrary.model.uservideomodel.SortDirection;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
@@ -28,6 +30,7 @@ public class UserVideoService {
     private final VideoService videoService;
     private final TrashService trashService;
     private final VideoMapper videoMapper;
+    private final PlaylistItemRepository playlistItemRepository;
 
     public UserVideo addVideo(String userId, String youtubeId){
         if (userId == null || userId.isBlank()) {
@@ -52,6 +55,7 @@ public class UserVideoService {
                 .watched(false)
                 .note(null)
                 .timestamps(new ArrayList<>())
+                .inPlaylist(false)  // Explicitly set to false by default
                 .addedAt(Instant.now())
                 .build();
 
@@ -101,14 +105,17 @@ public class UserVideoService {
         UserVideoSortBy effectiveSortBy = sortBy == null ? UserVideoSortBy.ADDED_AT : sortBy;
         SortDirection effectiveDirection = direction == null ? SortDirection.DESC : direction;
 
+        List<UserVideo> userVideos;
         if (effectiveSortBy == UserVideoSortBy.VIEWS) {
-            return getVideosSortedByViews(userId, effectiveDirection, unwatchedFirst);
+            userVideos = getVideosSortedByViews(userId, effectiveDirection, unwatchedFirst);
+        } else {
+            userVideos = userVideoRepository.findAllByUserId(
+                    userId,
+                    buildDatabaseSort(effectiveSortBy, effectiveDirection, unwatchedFirst)
+            );
         }
-
-        return userVideoRepository.findAllByUserId(
-                userId,
-                buildDatabaseSort(effectiveSortBy, effectiveDirection, unwatchedFirst)
-        );
+        
+        return userVideos;
     }
 
     private List<UserVideo> getVideosSortedByViews(String userId, SortDirection direction, boolean unwatchedFirst) {

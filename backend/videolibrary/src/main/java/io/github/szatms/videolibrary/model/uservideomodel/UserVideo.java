@@ -26,6 +26,7 @@ public class UserVideo {
     private String note;
     private boolean watched;
     private List<Timestamp> timestamps;
+    private boolean inPlaylist;
 
     Instant addedAt;
 }

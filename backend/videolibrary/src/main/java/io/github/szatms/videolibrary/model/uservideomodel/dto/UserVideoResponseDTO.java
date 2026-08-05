@@ -14,6 +14,7 @@ public class UserVideoResponseDTO {
     private boolean watched;
     private String note;
     private List<Timestamp> timestamps;
+    private boolean inPlaylist;
 
     private Instant addedAt;
 
