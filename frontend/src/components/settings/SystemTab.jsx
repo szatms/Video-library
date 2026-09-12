@@ -6,8 +6,7 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
     deletionPeriod: null,
     dateFormat: "EU",
     timeFormat: "H_12",
-    maxUsers: null,
-    maintenanceMode: false
+    maxUsers: null
   });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -118,8 +117,7 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
         deletionPeriod: systemSettings.deletionPeriod,
         dateFormat: systemSettings.dateFormat,
         timeFormat: systemSettings.timeFormat,
-        maxUsers: systemSettings.maxUsers,
-        maintenanceMode: systemSettings.maintenanceMode
+        maxUsers: systemSettings.maxUsers
       });
       
       setSuccess(true);
@@ -362,18 +360,7 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
           </select>
         </div>
         
-        <div className="mb-3 form-check">
-          <input
-            type="checkbox"
-            id="maintenanceMode"
-            className="form-check-input"
-            checked={systemSettings.maintenanceMode || false}
-            onChange={(e) => handleChange("maintenanceMode", e.target.checked)}
-          />
-          <label htmlFor="maintenanceMode" className="form-check-label">
-            Maintenance Mode
-          </label>
-        </div>
+
         
         <button 
           type="submit" 
