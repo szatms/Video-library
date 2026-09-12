@@ -15,8 +15,12 @@
     "bootstrap-icons": "^1.13.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.14.0",
-    "react-youtube": "^10.1.0"
+    "react-simplemde-editor": "^5.2.0",
+    "react-syntax-highlighter": "^16.1.1",
+    "react-youtube": "^10.1.0",
+    "simple-markdown-editor": "^1.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

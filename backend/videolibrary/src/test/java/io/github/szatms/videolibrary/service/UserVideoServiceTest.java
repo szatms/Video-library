@@ -120,7 +120,7 @@ class UserVideoServiceTest {
         when(userVideoRepository.findById("uv-1")).thenReturn(Optional.of(userVideo));
         when(userVideoRepository.countByVideoId("video-1")).thenReturn(1L);
 
-        userVideoService.deleteVideo("user-1", "uv-1");
+        userVideoService.deleteVideo("uv-1");
 
         verify(userVideoRepository).deleteById("uv-1");
         verify(videoService).deleteById("video-1");
@@ -138,7 +138,7 @@ class UserVideoServiceTest {
         when(userVideoRepository.findById("uv-1")).thenReturn(Optional.of(userVideo));
         when(userVideoRepository.countByVideoId("video-1")).thenReturn(2L);
 
-        userVideoService.deleteVideo("user-1", "uv-1");
+        userVideoService.deleteVideo("uv-1");
 
         verify(userVideoRepository).deleteById("uv-1");
         verify(videoService, never()).deleteById("video-1");

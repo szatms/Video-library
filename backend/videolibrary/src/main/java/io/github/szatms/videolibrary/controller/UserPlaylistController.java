@@ -2,12 +2,14 @@ package io.github.szatms.videolibrary.controller;
 
 import io.github.szatms.videolibrary.mapper.PlaylistMapper;
 import io.github.szatms.videolibrary.mapper.UserPlaylistMapper;
+import io.github.szatms.videolibrary.model.notemodel.dto.AddToParentDTO;
 import io.github.szatms.videolibrary.model.playlistmodel.Playlist;
 import io.github.szatms.videolibrary.model.playlistmodel.dto.PlaylistResponseDTO;
 import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylist;
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistCreateDTO;
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistResponseDTO;
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistUpdateDTO;
+import io.github.szatms.videolibrary.service.NoteService;
 import io.github.szatms.videolibrary.service.PlaylistService;
 import io.github.szatms.videolibrary.service.UserPlaylistService;
 import io.github.szatms.videolibrary.security.CustomUserDetails;
@@ -28,6 +30,7 @@ public class UserPlaylistController {
     private final PlaylistMapper playlistMapper;
     private final PlaylistService playlistService;
     private final LinkUtils linkUtils;
+    private final NoteService noteService;
 
     @GetMapping
     public List<UserPlaylistResponseDTO> getPlaylists(
@@ -72,6 +75,38 @@ public class UserPlaylistController {
         Playlist playlist = playlistService.getById(userPlaylist.getPlaylistId());
         PlaylistResponseDTO playlistResponseDTO = playlistMapper.toResponseDTO(playlist);
         return userPlaylistMapper.toResponseDTO(userPlaylist, playlistResponseDTO);
+    }
+
+    @PostMapping("/{id}/notes/add")
+    public ResponseEntity<Void> addToParent(
+            @PathVariable String id,
+            @RequestBody AddToParentDTO dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        String userId = userDetails.getUser().getUserId();
+        
+        // Verify that the playlist belongs to the authenticated user
+        userPlaylistService.getPlaylist(userId, id);
+        
+        // Add notes to the parent playlist
+        noteService.addToParent(userId, dto);
+        
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/notes/remove")
+    public ResponseEntity<Void> removeFromParent(
+            @PathVariable String id,
+            @RequestBody AddToParentDTO dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        String userId = userDetails.getUser().getUserId();
+        
+        // Verify that the playlist belongs to the authenticated user
+        userPlaylistService.getPlaylist(userId, id);
+        
+        // Remove notes from the parent playlist
+        noteService.removeFromParent(userId, dto);
+        
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}")

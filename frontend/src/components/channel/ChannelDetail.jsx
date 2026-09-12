@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../../services/api";
 
 function ChannelDetail() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { channelId, videoId } = useParams();
   const [channel, setChannel] = useState(null);
   const [videos, setVideos] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -24,13 +26,17 @@ function ChannelDetail() {
 
   const loadChannel = async () => {
     try {
-      const [channelRes, videosRes] = await Promise.all([
+      const [channelRes, videosRes, playlistsRes] = await Promise.all([
         api.get(`/channels/${channelId}`),
         api.get(`/channels/${channelId}/videos`),
+        api.get(`/channels/${channelId}/playlists`),
       ]);
 
       setChannel(channelRes.data);
-      setVideos(videosRes.data);
+      // Filter out videos that have inPlaylist set to true
+      const filteredVideos = videosRes.data.filter(video => !video.inPlaylist);
+      setVideos(filteredVideos);
+      setPlaylists(playlistsRes.data);
       setError("");
     } catch (err) {
       console.error("CHANNEL DETAIL ERROR:", err);
@@ -39,7 +45,11 @@ function ChannelDetail() {
   };
 
   const handleOpenVideo = useCallback((videoId) => {
-    navigate(`/home/channels/${channelId}/${videoId}`);
+    navigate(`/home/channels/${channelId}/videos/${videoId}`);
+  }, [channelId, navigate]);
+  
+  const handleOpenPlaylist = useCallback((playlistId) => {
+    navigate(`/home/channels/${channelId}/playlists/${playlistId}`);
   }, [channelId, navigate]);
   
   const handleBack = useCallback(() => {
@@ -72,14 +82,17 @@ function ChannelDetail() {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-      <button
-        className="btn btn-secondary mb-4"
-        onClick={handleBack}
-      >
-        Back
-      </button>
+      {/* BACK BUTTON */}
+      <div className="mb-3">
+        <button 
+          className="btn btn-outline-primary" 
+          onClick={handleBack}
+        >
+          ← Back
+        </button>
+      </div>
 
       <div className="d-flex align-items-center gap-4 mb-4">
 
@@ -116,16 +129,15 @@ function ChannelDetail() {
 
       </div>
 
-      <div className="row">
+      <div className="row flex-grow-1">
 
         <div className="col-lg-6">
-
+          <h3 className="text-white mb-3">Videos</h3>
           <div className="video-list">
-
             {videos.map((video) => (
               <div
                 key={video.id}
-                className="video-list-card ..."
+                className="video-list-card"
                 onClick={() => handleOpenVideo(video.id)}
                 style={{ cursor: "pointer" }}
               >
@@ -181,9 +193,57 @@ function ChannelDetail() {
 
               </div>
             ))}
-
           </div>
+        </div>
 
+        <div className="col-lg-6">
+          <h3 className="text-white mb-3">Playlists</h3>
+          <div className="video-list">
+            {playlists.map((playlist) => (
+              <div
+                key={playlist.id}
+                className="video-list-card"
+                onClick={() => handleOpenPlaylist(playlist.id)}
+                style={{ cursor: "pointer" }}
+              >
+
+                <div className="d-flex gap-3 align-items-start min-w-0 flex-grow-1">
+
+                  <img
+                    src={playlist.playlist.thumbnailUrl}
+                    alt={playlist.playlist.title}
+                    className="video-list-thumbnail"
+                  />
+
+                  <div className="min-w-0">
+
+                    <div className="fw-semibold">
+                      {playlist.playlist.title}
+                    </div>
+
+                    <div className="video-list-channel text-truncate">
+                      {playlist.playlist.channelTitle}
+                    </div>
+
+                    <div className="d-flex flex-wrap gap-3 mt-2 text-muted small">
+                      <span>
+                        {playlist.playlist.videoCount?.toLocaleString()}
+                        {" "}videos
+                      </span>
+
+                      <span>
+                        Added: {formatAddedAt(playlist.addedAt)}
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>

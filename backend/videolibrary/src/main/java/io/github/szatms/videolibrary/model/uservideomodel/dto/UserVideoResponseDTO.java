@@ -12,7 +12,7 @@ public class UserVideoResponseDTO {
     private String id;
 
     private boolean watched;
-    private String note;
+    private List<String> noteIds;
     private List<Timestamp> timestamps;
     private boolean inPlaylist;
 

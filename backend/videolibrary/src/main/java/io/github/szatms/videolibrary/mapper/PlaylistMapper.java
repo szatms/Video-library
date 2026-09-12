@@ -21,6 +21,7 @@ public class PlaylistMapper {
         dto.setChannelTitle(playlist.getChannelTitle());
         dto.setDescription(playlist.getDescription());
         dto.setThumbnailUrl(playlist.getThumbnailUrl());
+        dto.setVideoCount(playlist.getVideoCount());
         dto.setItems(playlist.getItems());
 
         return dto;

@@ -1,16 +1,15 @@
 package io.github.szatms.videolibrary.model.trashmodel.deletedplaylist;
 
 import io.github.szatms.videolibrary.model.playlistmodel.Playlist;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
+@Getter
+@Setter
 @Data
 @Builder
 @NoArgsConstructor

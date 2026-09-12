@@ -1,10 +1,8 @@
 package io.github.szatms.videolibrary.mapper;
 
-import io.github.szatms.videolibrary.model.trashmodel.DeletedVideo;
+import io.github.szatms.videolibrary.model.trashmodel.deletedvideo.DeletedVideo;
 import io.github.szatms.videolibrary.model.videomodel.Video;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
 
 @Component
 public class DeletedVideoMapper {

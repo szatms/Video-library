@@ -25,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final AppSettingsService appSettingsService;
 
     //=========================
     // LOGIN
@@ -52,8 +53,10 @@ public class AuthService {
         String passwordHash = passwordEncoder.encode(dto.getPassword());
 
         User user = userMapper.fromCreateDTO(dto, passwordHash);
-        if (userRepository.count() == 0)
+        if (userRepository.count() == 0) {
             user.setRole(Role.OWNER);
+            appSettingsService.initializeAppSettings();
+        }
         else
             user.setRole(Role.USER);
 

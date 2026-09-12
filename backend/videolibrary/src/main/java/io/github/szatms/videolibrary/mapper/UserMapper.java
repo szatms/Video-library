@@ -36,7 +36,7 @@ public class UserMapper {
         dto.setUserId(user.getUserId());
         dto.setUsername(user.getUsername());
         dto.setRole(user.getRole());
-        dto.setDateFormat(user.getDateFormat());
+
         dto.setEnabled(user.getEnabled());
         dto.setCreatedAt(user.getCreatedAt());
         return dto;
@@ -63,7 +63,6 @@ public class UserMapper {
         if (dto.getPassword() != null)
             user.setPasswordHash(dto.getPassword());
 
-        if (dto.getDateFormat() != null)
-            user.setDateFormat(dto.getDateFormat());
+
     }
 }

@@ -1,5 +1,6 @@
 package io.github.szatms.videolibrary.model.trashmodel.dto;
 
+import io.github.szatms.videolibrary.model.codexmodel.ContentType;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
 import lombok.Data;
 
@@ -9,6 +10,10 @@ import java.time.Instant;
 public class TrashItemDisplayDTO {
 
     private String id;
+    private String restoreId;
+
+    private ContentType contentType;
+    private boolean inPlaylist;
 
     private String title;
     private String thumbnailUrl;

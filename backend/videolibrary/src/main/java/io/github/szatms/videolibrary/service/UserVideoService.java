@@ -2,8 +2,8 @@ package io.github.szatms.videolibrary.service;
 
 import io.github.szatms.videolibrary.mapper.UserVideoMapper;
 import io.github.szatms.videolibrary.mapper.VideoMapper;
-import io.github.szatms.videolibrary.model.playlistitemmodel.PlaylistItem;
-import io.github.szatms.videolibrary.model.playlistitemmodel.PlaylistItemRepository;
+import io.github.szatms.videolibrary.model.notemodel.Note;
+import io.github.szatms.videolibrary.model.notemodel.NoteRepository;
 import io.github.szatms.videolibrary.model.usermodel.UserRepository;
 import io.github.szatms.videolibrary.model.uservideomodel.SortDirection;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
@@ -12,6 +12,7 @@ import io.github.szatms.videolibrary.model.uservideomodel.UserVideoSortBy;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoSummaryResponseDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoUpdateDTO;
 import io.github.szatms.videolibrary.model.videomodel.Video;
+import io.github.szatms.videolibrary.model.videomodel.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -30,9 +31,14 @@ public class UserVideoService {
     private final VideoService videoService;
     private final TrashService trashService;
     private final VideoMapper videoMapper;
-    private final PlaylistItemRepository playlistItemRepository;
+    private final VideoRepository videoRepository;
+    private final NoteRepository noteRepository;
 
     public UserVideo addVideo(String userId, String youtubeId){
+        return addVideo(userId, youtubeId, false);
+    }
+
+    public UserVideo addVideo(String userId, String youtubeId, boolean inPlaylist){
         if (userId == null || userId.isBlank()) {
             throw new IllegalArgumentException("Invalid userId");
         }
@@ -45,17 +51,25 @@ public class UserVideoService {
 
         Video video = videoService.getOrCreateVideo(youtubeId);
 
-        if (userVideoRepository.findByUserIdAndVideoId(userId, video.getVideoId()).isPresent()) {
-            throw new IllegalArgumentException("Video already added");
+        Optional<UserVideo> existingUserVideo = userVideoRepository.findByUserIdAndVideoId(userId, video.getVideoId());
+        if (existingUserVideo.isPresent()) {
+            UserVideo existing = existingUserVideo.get();
+            // Only refuse if trying to add the same inPlaylist state twice
+            if (existing.isInPlaylist() == inPlaylist) {
+                throw new IllegalArgumentException("Video already added");
+            }
+            // If existing is in playlist, but we want to add as standalone, or vice versa,
+            // we should actually update the existing one (this is handled by the fact that
+            // the save below will fail due to unique constraint)
         }
 
         UserVideo userVideo = UserVideo.builder()
                 .userId(userId)
                 .videoId(video.getVideoId())
                 .watched(false)
-                .note(null)
+                .noteIds(new ArrayList<>())
                 .timestamps(new ArrayList<>())
-                .inPlaylist(false)  // Explicitly set to false by default
+                .inPlaylist(inPlaylist)  // Set based on parameter
                 .addedAt(Instant.now())
                 .build();
 
@@ -74,8 +88,8 @@ public class UserVideoService {
         return userVideoRepository.save(userVideo);
     }
 
-    public void deleteVideo(String userId, String userVideoId) {
-        UserVideo userVideo = getVideo(userId, userVideoId);
+    public void deleteVideo(String userVideoId) {
+        UserVideo userVideo = userVideoRepository.getById(userVideoId);
         long assignmentCount = userVideoRepository.countByVideoId(userVideo.getVideoId());
 
         String restoreId = UUID.randomUUID().toString();
@@ -87,6 +101,28 @@ public class UserVideoService {
             trashService.moveVideoToTrash(video, restoreId);
             videoService.deleteById(userVideo.getVideoId());
         }
+    }
+
+    public void deleteVideo(String userVideoId, String restoreId) {
+        UserVideo userVideo = userVideoRepository.getById(userVideoId);
+        long assignmentCount = userVideoRepository.countByVideoId(userVideo.getVideoId());
+
+        trashService.moveUserVideoToTrash(userVideo, restoreId);
+        userVideoRepository.deleteById(userVideo.getId());
+
+        if (assignmentCount == 1) {
+            Video video = videoService.getById(userVideo.getVideoId());
+            trashService.moveVideoToTrash(video, restoreId);
+            videoService.deleteById(userVideo.getVideoId());
+        }
+    }
+
+    public void deleteVideos(List<String> userVideoIds){
+        for (String id : userVideoIds){deleteVideo(id);}
+    }
+
+    public void deleteVideos(List<String> userVideoIds, String restoreId){
+        for (String id : userVideoIds){deleteVideo(id, restoreId);}
     }
 
     public List<UserVideo> getVideos(
@@ -183,7 +219,6 @@ public class UserVideoService {
             String userId,
             String channelId
     ) {
-
         List<UserVideo> userVideos = userVideoRepository.findAllByUserId(
                 userId,
                 Sort.unsorted()
@@ -207,7 +242,6 @@ public class UserVideoService {
 
         return userVideos.stream()
                 .filter(userVideo -> {
-
                     Video video = videosById.get(
                             userVideo.getVideoId()
                     );
@@ -218,7 +252,6 @@ public class UserVideoService {
                     );
                 })
                 .map(userVideo -> {
-
                     Video video = videosById.get(
                             userVideo.getVideoId()
                     );

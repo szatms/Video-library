@@ -9,6 +9,8 @@ import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistSum
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistUpdateDTO;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+
 @Component
 public class UserPlaylistMapper {
     //=========================
@@ -19,7 +21,8 @@ public class UserPlaylistMapper {
 
         dto.setId(userPlaylist.getId());
         dto.setWatched(userPlaylist.isWatched());
-        dto.setNote(userPlaylist.getNote());
+        dto.setNoteIds(new ArrayList<>());
+        dto.setItems(null); // Items are now stored as IDs, not full objects
         dto.setAddedAt(userPlaylist.getAddedAt());
         dto.setPlaylist(playlistResponseDTO);
 
@@ -43,11 +46,6 @@ public class UserPlaylistMapper {
     public void updateEntityFromDTO(UserPlaylistUpdateDTO dto, UserPlaylist entity){
         if (dto == null || entity == null)
             return;
-
-        if (dto.getNote() != null) {
-            String note = dto.getNote().trim();
-            entity.setNote(note.isEmpty() ? null : note);
-        }
 
         entity.setWatched(dto.isWatched());
     }

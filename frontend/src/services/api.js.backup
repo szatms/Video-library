@@ -1,0 +1,55 @@
+import axios from "axios";
+import { clearToken, getToken } from "./tokenService";
+
+const api = axios.create({
+  baseURL: "http://localhost:8080/api",
+});
+
+api.interceptors.request.use((config) => {
+  // Skip adding Authorization header for public endpoints
+  const publicEndpoints = ["/api/auth/has-users", "/api/auth/register", "/api/auth/login"];
+  
+  if (publicEndpoints.includes(config.url)) {
+    return config;
+  }
+
+  const token = getToken();
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Only logout if this is actually an authentication failure
+      // Check if it's a genuine auth error by looking at the error message
+      const errorMessage = error.response.data?.detail || error.response.data?.message || '';
+      
+      // If it's a genuine auth error, logout
+      if (!errorMessage.includes('expired') && 
+          !errorMessage.includes('invalid') && 
+          !errorMessage.includes('token') && 
+          !errorMessage.includes('unauthorized')) {
+        // This might be a regular application error that incorrectly returned 401
+        // Log it but don't logout
+        console.warn("Got 401 error, but appears to be application error:", errorMessage);
+        return Promise.reject(error);
+      }
+      
+      // Genuine authentication error - logout
+      clearToken();
+      window.location.href = "/";
+      // Optionally show a more specific error message
+      console.error("Authentication failed. Please log in again.");
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default api;

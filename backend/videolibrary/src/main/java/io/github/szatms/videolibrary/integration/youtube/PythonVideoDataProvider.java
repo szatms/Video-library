@@ -12,12 +12,14 @@ public class PythonVideoDataProvider {
     private final RestClient restClient;
 
     public PythonVideoResponseDTO load(String youtubeId) {
-        return restClient.get()
+        PythonVideoResponseDTO response = restClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/ytdlp/video/shorter")
+                        .path("/youtube/video")
                         .queryParam("url", youtubeId)
                         .build())
                 .retrieve()
                 .body(PythonVideoResponseDTO.class);
+        
+        return response;
     }
 }

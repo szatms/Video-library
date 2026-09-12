@@ -1,0 +1,9 @@
+services:
+  youtube-harvester:
+    build: .
+    container_name: youtube-harvester
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      YOUTUBE_DATA_API_KEY: ${YOUTUBE_DATA_API_KEY}
+    restart: unless-stopped

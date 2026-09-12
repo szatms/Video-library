@@ -1,15 +1,26 @@
 package io.github.szatms.videolibrary.service;
 
 import io.github.szatms.videolibrary.mapper.UserMapper;
+import io.github.szatms.videolibrary.model.notemodel.Note;
+import io.github.szatms.videolibrary.model.notemodel.NoteRepository;
+import io.github.szatms.videolibrary.model.usermodel.Role;
 import io.github.szatms.videolibrary.model.usermodel.User;
 import io.github.szatms.videolibrary.model.usermodel.UserRepository;
+import io.github.szatms.videolibrary.model.usermodel.dto.UserAdminUpdateDTO;
 import io.github.szatms.videolibrary.model.usermodel.dto.UserResponseDTO;
 import io.github.szatms.videolibrary.model.usermodel.dto.UserSelfUpdateDTO;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylist;
+import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
+import io.github.szatms.videolibrary.model.uservideomodel.UserVideoRepository;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylistRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +28,11 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final UserVideoRepository userVideoRepository;
+    private final UserPlaylistRepository userPlaylistRepository;
+    private final NoteRepository noteRepository;
+    private final UserVideoService userVideoService;
+    private final UserPlaylistService userPlaylistService;
 
     //=========================
     // CURRENT USER
@@ -25,23 +41,23 @@ public class UserService {
         return userMapper.toResponseDTO(getCurrentUserEntity());
     }
 
+    public List<UserResponseDTO> getUsers(){
+        return userRepository.findAll().stream()
+                .map(userMapper::toResponseDTO)
+                .toList();
+    }
+
     //=========================
-    // SELF UPDATE
+    // UPDATE
     //=========================
     public UserResponseDTO updateSelf(UserSelfUpdateDTO dto) {
         User user = getCurrentUserEntity();
 
-        if (dto.getUsername() != null) {
-            String newUsername = dto.getUsername().trim();
-            if (newUsername.isEmpty())
-                throw new IllegalArgumentException("Username cannot be empty");
+        if (!isValidUsername(dto.getUsername()))
+            throw new IllegalArgumentException("Username invalid or taken already");
+        String newUsername = dto.getUsername().trim();
 
-            if (!newUsername.equals(user.getUsername()) && userRepository.existsByUsername(newUsername)) {
-                throw new IllegalArgumentException("Username already exists");
-            }
-
-            user.setUsername(newUsername);
-        }
+        user.setUsername(newUsername);
 
         if (dto.getPassword() != null) {
             if (dto.getPassword().isBlank())
@@ -50,20 +66,63 @@ public class UserService {
             user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
         }
 
-        if (dto.getDateFormat() != null) {
-            user.setDateFormat(dto.getDateFormat());
+        userRepository.save(user);
+        return userMapper.toResponseDTO(user);
+    }
+
+    public UserResponseDTO adminUpdate(UserAdminUpdateDTO dto){
+        User user = userRepository.findByUsername(dto.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("Cannot find user"));
+
+        // Check if username is being changed to an existing one (but not to the same user's username)
+        if (dto.getUsername() != null) {
+            String newUsername = dto.getUsername().trim();
+            // If the username is different from the current user's username, check if it's available
+            if (!newUsername.equals(user.getUsername()) && !isValidUsername(newUsername)) {
+                throw new IllegalArgumentException("Username invalid or taken already");
+            }
         }
+        
+        if (dto.getPassword() != null) {
+            //if (dto.getPassword().isBlank())
+            //    throw new IllegalArgumentException("Password cannot be empty");
+
+            user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        }
+
+        if (dto.getEnabled() != null)
+            user.setEnabled(dto.getEnabled());
+
+        if (dto.getRole() == Role.ADMIN || dto.getRole() == Role.USER)
+            user.setRole(dto.getRole());
 
         userRepository.save(user);
         return userMapper.toResponseDTO(user);
     }
 
     //=========================
-    // SELF DELETE
+    // DELETE
     //=========================
     public void deleteSelf() {
         User user = getCurrentUserEntity();
-        userRepository.deleteById(user.getUserId());
+        deleteUser(user.getUserId());
+    }
+
+    public void deleteByAdmin(List<String> userIds){
+        for (String userId : userIds) {
+            deleteUser(userId);
+        }
+    }
+
+    //=========================
+    // HELPERS
+    //=========================
+    private boolean isValidUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return false;
+        }
+
+        return !userRepository.existsByUsername(username);
     }
 
     private User getCurrentUserEntity() {
@@ -78,5 +137,32 @@ public class UserService {
         String userId = userDetails.getUser().getUserId();
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
+    }
+
+    private void deleteUser(String userId){
+        // Delete all UserVideos for this user
+        List<UserVideo> userVideos = userVideoRepository.findAllByUserId(userId, Sort.unsorted());
+        List<String> userVideoIds = userVideos.stream().map(UserVideo::getId).toList();
+
+        if (!userVideoIds.isEmpty()) {
+            userVideoService.deleteVideos(userVideoIds);
+        }
+
+        // Delete all UserPlaylists for this user
+        List<UserPlaylist> userPlaylists = userPlaylistRepository.findAllByUserId(userId, Sort.unsorted());
+        List<String> userPlaylistIds = userPlaylists.stream().map(UserPlaylist::getId).toList();
+
+        for (String userPlaylistId : userPlaylistIds) {
+            userPlaylistService.deletePlaylist(userId, userPlaylistId);
+        }
+
+        // Delete all notes created by this user
+        List<Note> userNotes = noteRepository.findByUserId(userId);
+        for (Note note : userNotes) {
+            noteRepository.deleteById(note.getId());
+        }
+
+        // Finally, delete the user
+        userRepository.deleteById(userId);
     }
 }

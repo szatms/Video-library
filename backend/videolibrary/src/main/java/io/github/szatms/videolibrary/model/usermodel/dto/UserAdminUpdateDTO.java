@@ -5,6 +5,9 @@ import lombok.Data;
 
 @Data
 public class UserAdminUpdateDTO {
+    private String userId;
+    private String username;
+    private String password;
     private Boolean enabled;
     private Role role;
 }

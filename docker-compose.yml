@@ -1,0 +1,111 @@
+services:
+
+  # ==========================================
+  # MongoDB
+  # ==========================================
+
+  mongo:
+    image: mongo:7
+    container_name: video-library-mongo
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --username ${MONGO_USERNAME} --password ${MONGO_PASSWORD} --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep 1"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+
+  # ==========================================
+  # Mongo Express
+  # ==========================================
+
+  mongo-express:
+    image: mongo-express
+    container_name: video-library-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+
+  # ==========================================
+  # Spring Boot Backend
+  # ==========================================
+
+  backend:
+    build:
+      context: ./backend/videolibrary
+    container_name: video-library-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT}:8080"
+    environment:
+      MONGO_HOST: mongo
+      MONGO_PORT: 27017
+      MONGO_DATABASE: ${MONGO_DATABASE}
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+
+  # ==========================================
+  # Vite Frontend
+  # ==========================================
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: video-library-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT}:5173"
+    depends_on:
+      - backend
+
+
+  # ==========================================
+  # YouTube Harvester Microservice
+  # ==========================================
+
+  youtube-harvester:
+    build:
+      context: ./microservice
+    container_name: youtube-harvester
+    restart: unless-stopped
+    ports:
+      - "${MICROSERVICE_PORT}:8000"
+    environment:
+      YOUTUBE_DATA_API_KEY: ${YOUTUBE_DATA_API_KEY}
+    depends_on:
+      - backend
+
+
+volumes:
+  mongo_data:

@@ -10,8 +10,8 @@ public class UserVideoSummaryResponseDTO {
     private String id;
 
     private boolean watched;
-    private String note;
-    private boolean inPlaylist;
+    private int noteCount;
+    private Boolean inPlaylist;
 
     private Instant addedAt;
 

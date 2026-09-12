@@ -21,6 +21,7 @@ function Home() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [userError, setUserError] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,7 +82,7 @@ function Home() {
     navigate("/home/trash");
   };
 
-  const handleOpenChannel = (channelId) => {
+    const handleOpenChannel = (channelId) => {
     setSelectedChannelId(channelId);
     navigate(`/home/channels/${channelId}`);
   };
@@ -105,90 +106,155 @@ function Home() {
     navigate(-1);
   };
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
     <div className="d-flex vh-100 text-light">
 
       {/* SIDEBAR */}
       <div
-        className="p-3 d-flex flex-column"
+        className={`p-3 d-flex flex-column ${sidebarCollapsed ? 'collapsed' : ''}`}
         style={{
-          width: "260px",
+          width: sidebarCollapsed ? "60px" : "260px",
           background: "rgba(0,0,0,0.6)",
-          borderRight: "1px solid rgba(255,255,255,0.1)"
+          borderRight: "1px solid rgba(255,255,255,0.1)",
+          transition: "width 0.3s ease",
+          position: "relative"
         }}
       >
-        <button
-          type="button"
-          className="btn btn-link p-0 mb-3 text-white fw-bold text-decoration-none text-start align-self-start"
-          onClick={handleGoHome}
-        >
-          VideoLibrary
-        </button>
+        {/* VideoLibrary text that navigates to home */}
+        <div className="d-flex justify-content-between align-items-center w-100">
+          <button
+            type="button"
+            className="btn btn-link p-0 text-white fw-bold text-decoration-none text-start"
+            onClick={handleGoHome}
+          >
+            <span className="d-flex align-items-center">
+              {!sidebarCollapsed && "VideoLibrary"}
+            </span>
+          </button>
+          
+          {/* Collapse/Expand button */}
+          <button
+            type="button"
+            className="btn btn-link p-0 text-white fw-bold text-decoration-none text-start"
+            onClick={toggleSidebar}
+          >
+            <span className="d-flex align-items-center">
+              {sidebarCollapsed ? "→" : "←"}
+            </span>
+          </button>
+        </div>
+        
+        {sidebarCollapsed && (
+          <div className="d-flex justify-content-center mt-2">
+            <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <i className="bi bi-house"></i>
+            </button>
+          </div>
+        )}
 
-        <input
-          className="form-control mb-3"
-          placeholder="Search..."
-        />
+        {/* Search bar removed */}
 
         <hr />
 
         {/* LIBRARY */}
-        <h6 className="text-white fw-bold">Library</h6>
+        {!sidebarCollapsed && <h6 className="text-white fw-bold">Library</h6>}
         <ul className="list-unstyled mb-3">
           <li
-            className={`mb-1 ${isVideosList ? "text-decoration-underline" : ""}`}
+            className={`mb-1 ${isVideosList ? "text-decoration-underline" : ""} ${sidebarCollapsed ? "d-flex justify-content-center" : ""}`}
             style={{ cursor: "pointer" }}
             onClick={() => navigate("/home/videos")}
           >
-            Videos
+            {!sidebarCollapsed ? "Videos" : (
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <i className="bi bi-camera-video"></i>
+              </button>
+            )}
           </li>
 
           <li
-            className={`${isChannelsList || isChannelDetail ? "text-decoration-underline" : ""}`}
+            className={`${isChannelsList || isChannelDetail ? "text-decoration-underline" : ""} ${sidebarCollapsed ? "d-flex justify-content-center" : ""}`}
             style={{ cursor: "pointer" }}
             onClick={handleOpenChannels}
           >
-            Channels
+            {!sidebarCollapsed ? "Channels" : (
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <i className="bi bi-person-circle"></i>
+              </button>
+            )}
           </li>
 
-          <li style={{ opacity: 0.5 }}>Playlists</li>
+          <li
+            className={`${location.pathname.startsWith("/home/playlists") ? "text-decoration-underline" : ""} ${sidebarCollapsed ? "d-flex justify-content-center" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate("/home/playlists")}
+          >
+            {!sidebarCollapsed ? "Playlists" : (
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <i className="bi bi-list"></i>
+              </button>
+            )}
+          </li>
 
           <hr className="my-3" />
 
           <li
-            className={`${isTrash ? "text-decoration-underline" : ""}`}
+            className={`${isTrash ? "text-decoration-underline" : ""} ${sidebarCollapsed ? "d-flex justify-content-center" : ""}`}
             style={{ cursor: "pointer" }}
             onClick={handleOpenTrash}
           >
-            Recycling Bin
+            {!sidebarCollapsed ? "Recycling Bin" : (
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <i className="bi bi-trash"></i>
+              </button>
+            )}
           </li>
         </ul>
 
         <hr />
 
         {/* SETTINGS */}
-        <h6 className="text-white fw-bold">Settings</h6>
-        <ul className="list-unstyled mb-3">
-          <li style={{ opacity: 0.5 }}>Profile</li>
-          <li
-            className={`${isSettings ? "text-decoration-underline" : ""}`}
-            style={{ cursor: "pointer" }}
+        {!sidebarCollapsed && <h6 className={`text-white fw-bold ${location.pathname === "/home/settings" ? "text-decoration-underline" : ""}`} style={{ cursor: "pointer" }} onClick={handleOpenSettings}>Settings</h6>}
+        {sidebarCollapsed && (
+          <button
+            className="btn btn-link p-0 text-white fw-bold text-decoration-none text-start align-self-start"
             onClick={handleOpenSettings}
           >
-            Preferences
-          </li>
-        </ul>
+            <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <i className="bi bi-gear"></i>
+            </button>
+          </button>
+        )}
 
         <div className="mt-auto">
-          <button className="btn btn-danger w-100" onClick={handleLogout}>
-            Logout
-          </button>
+          {!sidebarCollapsed ? (
+            <button className="btn btn-danger w-100" onClick={handleLogout}>
+              Logout
+            </button>
+          ) : (
+            <button className="btn btn-danger" onClick={handleLogout} style={{ width: "40px", height: "40px", padding: 0 }}>
+              <i className="bi bi-box-arrow-left"></i>
+            </button>
+          )}
         </div>
       </div>
 
       {/* MAIN CONTENT - Use Outlet for child routes */}
       <div className="flex-grow-1 d-flex flex-column">
-        <Outlet />
+        {isSettings ? (
+          <SettingsPanel 
+            currentUser={currentUser}
+            setCurrentUser={setCurrentUser}
+            loadingUser={loadingUser}
+            userError={userError}
+            onBack={() => navigate(-1)}
+          />
+        ) : (
+          <Outlet />
+        )}
       </div>
     </div>
   );

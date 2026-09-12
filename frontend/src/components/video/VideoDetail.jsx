@@ -1,153 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import YouTube from "react-youtube";
 import api from "../../services/api";
-
-function getSafeExternalUrl(rawUrl) {
-  try {
-    const parsed = new URL(rawUrl);
-    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : null;
-  } catch {
-    return null;
-  }
-}
-
-function renderInlineMarkdown(text) {
-  const nodes = [];
-  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
-  let lastIndex = 0;
-  let key = 0;
-
-  for (const match of text.matchAll(pattern)) {
-    const [token] = match;
-    const index = match.index ?? 0;
-
-    if (index > lastIndex) {
-      nodes.push(text.slice(lastIndex, index));
-    }
-
-    if (token.startsWith("**") && token.endsWith("**")) {
-      nodes.push(<strong key={key++}>{token.slice(2, -2)}</strong>);
-    } else if (token.startsWith("*") && token.endsWith("*")) {
-      nodes.push(<em key={key++}>{token.slice(1, -1)}</em>);
-    } else if (token.startsWith("`") && token.endsWith("`")) {
-      nodes.push(<code key={key++}>{token.slice(1, -1)}</code>);
-    } else {
-      const linkMatch = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-      if (linkMatch) {
-        const safeUrl = getSafeExternalUrl(linkMatch[2]);
-
-        if (safeUrl) {
-          nodes.push(
-            <a
-              key={key++}
-              href={safeUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {linkMatch[1]}
-            </a>
-          );
-        } else {
-          nodes.push(linkMatch[1]);
-        }
-      } else {
-        nodes.push(token);
-      }
-    }
-
-    lastIndex = index + token.length;
-  }
-
-  if (lastIndex < text.length) {
-    nodes.push(text.slice(lastIndex));
-  }
-
-  return nodes.length > 0 ? nodes : text;
-}
-
-function renderMarkdown(text) {
-  if (!text.trim()) {
-    return <p className="mb-0 text-muted">No notes yet.</p>;
-  }
-
-  const lines = text.split("\n");
-  const elements = [];
-  let listItems = [];
-  let listType = null;
-
-  const flushList = () => {
-    if (listItems.length === 0) {
-      return;
-    }
-
-    const ListTag = listType;
-    elements.push(
-      <ListTag key={`list-${elements.length}`} className="mb-3 ps-3">
-        {listItems.map((item, index) => (
-          <li key={index}>{renderInlineMarkdown(item)}</li>
-        ))}
-      </ListTag>
-    );
-    listItems = [];
-    listType = null;
-  };
-
-  lines.forEach((line, index) => {
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      flushList();
-      return;
-    }
-
-    if (trimmed.startsWith("### ")) {
-      flushList();
-      elements.push(<h6 key={index}>{renderInlineMarkdown(trimmed.slice(4))}</h6>);
-      return;
-    }
-
-    if (trimmed.startsWith("## ")) {
-      flushList();
-      elements.push(<h5 key={index}>{renderInlineMarkdown(trimmed.slice(3))}</h5>);
-      return;
-    }
-
-    if (trimmed.startsWith("# ")) {
-      flushList();
-      elements.push(<h4 key={index}>{renderInlineMarkdown(trimmed.slice(2))}</h4>);
-      return;
-    }
-
-    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-      if (listType !== "ul") {
-        flushList();
-        listType = "ul";
-      }
-      listItems.push(trimmed.slice(2));
-      return;
-    }
-
-    if (/^\d+\.\s/.test(trimmed)) {
-      if (listType !== "ol") {
-        flushList();
-        listType = "ol";
-      }
-      listItems.push(trimmed.replace(/^\d+\.\s/, ""));
-      return;
-    }
-
-    flushList();
-    elements.push(
-      <p key={index} className="mb-3">
-        {renderInlineMarkdown(trimmed)}
-      </p>
-    );
-  });
-
-  flushList();
-
-  return elements;
-}
+import NotesEditor from "../notes/NotesEditor";
+import { fetchUserSettings } from "../../services/settings";
 
 function formatDate(date, dateFormat) {
     const d = new Date(date);
@@ -179,16 +34,15 @@ function formatTimestamp(seconds) {
 
 function VideoDetail({ userVideoId, currentUser, onBack }) {
   const [videoDetail, setVideoDetail] = useState(null);
+  const [notes, setNotes] = useState([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
   const [saveState, setSaveState] = useState("idle");
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [loading, setLoading] = useState(true);
-  const textareaRef = useRef(null);
-  const [timestamps, setTimestamps] = useState([]);
-  const [newTimestampSeconds, setNewTimestampSeconds] = useState("");
-  const [newTimestampLabel, setNewTimestampLabel] = useState("");
+  const [userSettings, setUserSettings] = useState(null);
   const playerRef = useRef(null);
 
   useEffect(() => {
@@ -201,12 +55,26 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
 
     const loadVideoDetail = async () => {
       try {
+        // Fetch user settings
+        const settings = await fetchUserSettings();
+        setUserSettings(settings);
+        
         const res = await api.get(`/uservideos/${userVideoId}`, {
           signal: controller.signal,
         });
         setVideoDetail(res.data);
         setNoteDraft(res.data.note ?? "");
+        // Load notes for this video
+        setLoadingNotes(true);
+        const notesRes = await api.get(`/uservideos/${userVideoId}/notes`);
+        setNotes(notesRes.data);
+        // Initialize noteDraft with the content of the first note, if it exists
+        if (notesRes.data.length > 0 && notesRes.data[0]) {
+          setNoteDraft(notesRes.data[0].content ?? "");
+        }
+        // Set timestamps from the video data
         setTimestamps(res.data.timestamps ?? []);
+        setLoadingNotes(false);
       } catch (err) {
         if (err.code === "ERR_CANCELED") {
           return;
@@ -233,61 +101,101 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
   const stats = activeVideo?.stats;
   const currentNote = videoDetail?.note ?? "";
   const currentWatched = videoDetail?.watched ?? false;
-  const isDirty =
-    noteDraft !== currentNote ||
-    JSON.stringify(timestamps) !==
-      JSON.stringify(videoDetail?.timestamps ?? []);
-
-  const applyFormat = (prefix, suffix = "", placeholder = "text") => {
-    const textarea = textareaRef.current;
-
-    if (!textarea) {
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = noteDraft.slice(start, end) || placeholder;
-    const updated =
-      noteDraft.slice(0, start) +
-      prefix +
-      selected +
-      suffix +
-      noteDraft.slice(end);
-
-    setNoteDraft(updated);
-    setSaveState("idle");
-    setSaveError("");
-
-    requestAnimationFrame(() => {
-      textarea.focus();
-      const cursorStart = start + prefix.length;
-      const cursorEnd = cursorStart + selected.length;
-      textarea.setSelectionRange(cursorStart, cursorEnd);
-    });
-  };
+  const isDirty = noteDraft !== currentNote;
 
   const handleSave = async () => {
     setSaveState("saving");
     setSaveError("");
 
     try {
-      const res = await api.patch(`/uservideos/${userVideoId}`, {
-        note: noteDraft,
-        watched: currentWatched,
-        timestamps: timestamps,
-      });
+      // First, we need to determine which note to update
+      // If there are existing notes, update the first one
+      // If no notes exist, we need to create one first
+      let noteIdToSave = null;
+      
+      if (notes.length > 0) {
+        // Update the first existing note
+        noteIdToSave = notes[0].id;
+      } else {
+        // Create a new note if none exists
+        const createResponse = await api.post('/notes/create', {
+          parentId: null,
+          title: "Untitled Note",
+          content: noteDraft,
+          isPdf: false,
+          parentIds: [userVideoId]
+        });
+        noteIdToSave = createResponse.data.id;
+        // Refresh notes to include the new one
+        await fetchNotes();
+      }
 
-      setVideoDetail(res.data);
-      setNoteDraft(res.data.note ?? "");
-      setTimestamps(res.data.timestamps ?? []);
-
-      setSaveState("saved");
+      if (noteIdToSave) {
+        // Update the note content
+        try {
+          // Make sure we have a valid note to update
+          if (!notes[0]) {
+            throw new Error("No note found to update");
+          }
+          const updateResponse = await api.put(`/notes/${noteIdToSave}`, {
+            title: notes[0].title,
+            content: noteDraft
+          });
+        } catch (updateError) {
+          console.error("Note update error:", updateError);
+          throw updateError;
+        }
+        
+        // Update the video's note reference if we just created one
+        if (notes.length === 0) {
+          // Fetch updated video data to get the note reference
+          try {
+            const res = await api.get(`/uservideos/${userVideoId}`);
+            setVideoDetail(res.data);
+            setNoteDraft(res.data.note ?? "");
+          } catch (fetchError) {
+            console.error("Video fetch error:", fetchError);
+            console.error("Fetch error details:", {
+              status: fetchError.response?.status,
+              data: fetchError.response?.data
+            });
+            throw fetchError;
+          }
+        }
+        
+        setSaveState("saved");
+      }
     } catch (err) {
       console.error("VIDEO NOTE SAVE ERROR:", err);
-      setSaveError("Could not save note.");
+      console.error("Error details:", {
+        message: err.message,
+        response: err.response,
+        status: err.status
+      });
+      setSaveError("Could not save note. " + (err.response?.data?.message || err.message || ""));
       setSaveState("error");
     }
+  };
+
+  const fetchNotes = async () => {
+    try {
+      setLoadingNotes(true);
+      const notesRes = await api.get(`/uservideos/${userVideoId}/notes`);
+      setNotes(notesRes.data);
+      // Initialize noteDraft with the content of the first note, if it exists
+      if (notesRes.data.length > 0 && notesRes.data[0]) {
+        setNoteDraft(notesRes.data[0].content ?? "");
+      }
+    } catch (err) {
+      console.error("Error fetching notes:", err);
+      setLoadError("Failed to load notes");
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  const handlePlayerReady = (event) => {
+    playerRef.current = event.target;
   };
 
   const handleAddTimestamp = async () => {
@@ -338,9 +246,73 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
     }
   };
 
-  const handlePlayerReady = (event) => {
-    playerRef.current = event.target;
-  };
+  // Resizable notes section functionality
+  useEffect(() => {
+    const setupResize = () => {
+      const resizer = document.getElementById('resizer');
+      const notesSection = document.getElementById('notes-section');
+      
+      if (!resizer || !notesSection) {
+        // Try again after a short delay if elements aren't available yet
+        setTimeout(setupResize, 100);
+        return;
+      }
+      
+      let isResizing = false;
+      let startX, startWidth;
+
+      const startResizing = (e) => {
+        e.preventDefault();
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = parseInt(document.defaultView.getComputedStyle(notesSection).width, 10);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        document.body.style.MozUserSelect = 'none';
+        document.body.style.WebkitUserSelect = 'none';
+      };
+
+      const resize = (e) => {
+        if (!isResizing) return;
+        e.preventDefault();
+        // Reverse the direction: dragging left makes it bigger, dragging right makes it smaller
+        const newWidth = startWidth - (e.clientX - startX);
+        // Ensure minimum width (320px) and maximum width (600px) - adjust as needed
+        const minWidth = 320;
+        const maxWidth = 600;
+        
+        if (newWidth >= minWidth && newWidth <= maxWidth) {
+          notesSection.style.width = newWidth + 'px';
+        }
+      };
+
+      const stopResizing = (e) => {
+        e.preventDefault();
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.body.style.MozUserSelect = '';
+        document.body.style.WebkitUserSelect = '';
+      };
+
+      resizer.addEventListener('mousedown', startResizing);
+      document.addEventListener('mousemove', resize);
+      document.addEventListener('mouseup', stopResizing);
+
+      // Cleanup
+      return () => {
+        resizer.removeEventListener('mousedown', startResizing);
+        document.removeEventListener('mousemove', resize);
+        document.removeEventListener('mouseup', stopResizing);
+      };
+    };
+
+    setupResize();
+  }, []);
+
+  const [timestamps, setTimestamps] = useState([]);
+  const [newTimestampSeconds, setNewTimestampSeconds] = useState("");
+  const [newTimestampLabel, setNewTimestampLabel] = useState("");
 
   if (loading) {
     return <div className="p-4">Loading video...</div>;
@@ -356,7 +328,7 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
 
   return (
     <div className="d-flex h-100 overflow-hidden">
-      <div className="flex-grow-1 d-flex flex-column min-w-0">
+      <div className="flex-grow-1 d-flex flex-column min-w-0" id="video-detail-container">
         <div
           className="px-3 py-2"
           style={{ background: "rgba(0,0,0,0.45)" }}
@@ -400,7 +372,7 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
                     activeVideo.publishedAt
                       ? formatDate(
                           activeVideo.publishedAt,
-                          currentUser?.dateFormat
+                          userSettings?.dateFormat || "ISO"
                         )
                       : "-"
                   }
@@ -513,106 +485,55 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
       </div>
 
       <div
-        style={{ width: "320px", background: "rgba(0,0,0,0.6)" }}
+        id="notes-section"
+        style={{ width: "320px", background: "rgba(0,0,0,0.6)", position: "relative" }}
         className="p-3 d-flex flex-column flex-shrink-0 h-100 overflow-auto"
       >
-        <img
-          src={activeVideo.thumbnailUrl}
-          alt={activeVideo.title}
-          className="img-fluid mb-3"
-          style={{ borderRadius: "6px" }}
+        {/* Resizer handle */}
+        <div 
+          id="resizer"
+          style={{
+            position: "absolute",
+            left: "-5px",
+            top: 0,
+            bottom: 0,
+            width: "10px",
+            cursor: "col-resize",
+            zIndex: 10,
+            background: "rgba(255,255,255,0.2)",
+            borderLeft: "1px solid rgba(255,255,255,0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            userSelect: "none"
+          }}
+        >
+          <div style={{ 
+            width: "4px", 
+            height: "20px", 
+            background: "rgba(255,255,255,0.6)", 
+            borderRadius: "2px" 
+          }} />
+        </div>
+        
+        {/* Enhanced NotesEditor component */}
+        <NotesEditor
+          note={noteDraft}
+          onNoteChange={setNoteDraft}
+          onSave={handleSave}
+          loading={loadingNotes}
+          saveState={saveState}
+          saveError={saveError}
+          isDirty={isDirty}
+          onTogglePreview={setPreviewMode}
+          previewMode={previewMode}
+          onIsDirtyChange={setSaveState}
+          parentId={userVideoId}
+          parentType="video"
+          currentUser={currentUser}
+          notes={notes}
+          onFetchNotes={fetchNotes}
         />
-        <h5>{activeVideo.title}</h5>
-        <div className="d-flex align-items-center justify-content-between mb-2">
-          <h6 className="mb-0">Notes</h6>
-          <div className="btn-group btn-group-sm" role="group" aria-label="Note mode">
-            <button
-              type="button"
-              className={`btn ${!previewMode ? "btn-light" : "btn-outline-light"}`}
-              onClick={() => setPreviewMode(false)}
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              className={`btn ${previewMode ? "btn-light" : "btn-outline-light"}`}
-              onClick={() => setPreviewMode(true)}
-            >
-              Preview
-            </button>
-          </div>
-        </div>
-
-        <div className="btn-group btn-group-sm mb-2" role="group" aria-label="Markdown toolbar">
-          <button type="button" className="btn btn-outline-light" onClick={() => applyFormat("**", "**", "bold")}>
-            B
-          </button>
-          <button type="button" className="btn btn-outline-light" onClick={() => applyFormat("*", "*", "italic")}>
-            I
-          </button>
-          <button type="button" className="btn btn-outline-light" onClick={() => applyFormat("# ", "", "Heading")}>
-            H
-          </button>
-          <button type="button" className="btn btn-outline-light" onClick={() => applyFormat("- ", "", "List item")}>
-            List
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline-light"
-            onClick={() => applyFormat("[", "](https://example.com)", "link text")}
-          >
-            Link
-          </button>
-        </div>
-
-        {previewMode ? (
-          <div
-            className="border rounded p-3 flex-grow-1 overflow-auto"
-            style={{ minHeight: "220px", background: "rgba(255,255,255,0.04)" }}
-          >
-            {renderMarkdown(noteDraft)}
-          </div>
-        ) : (
-          <textarea
-            ref={textareaRef}
-            className="form-control flex-grow-1 mb-3"
-            style={{
-              minHeight: "220px",
-              resize: "vertical",
-              background: "rgba(255,255,255,0.04)",
-              color: "inherit",
-            }}
-            value={noteDraft}
-            onChange={(e) => {
-              setNoteDraft(e.target.value);
-              setSaveState("idle");
-              setSaveError("");
-            }}
-            placeholder="Write notes in Markdown..."
-          />
-        )}
-
-        <div className="d-flex justify-content-between align-items-center mt-3">
-          <small
-            className={
-              saveError
-                ? "text-danger"
-                : saveState === "saved"
-                  ? "text-success"
-                  : "text-white fw-bold"
-            }
-          >
-            {saveError || (saveState === "saved" ? "Saved" : isDirty ? "Unsaved changes" : "Up to date")}
-          </small>
-          <button
-            type="button"
-            className="btn btn-success btn-sm"
-            onClick={handleSave}
-            disabled={!isDirty || saveState === "saving"}
-          >
-            {saveState === "saving" ? "Saving..." : "Save"}
-          </button>
-        </div>
       </div>
     </div>
   );

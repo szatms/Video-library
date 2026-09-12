@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../services/api";
 import ChannelCard from "./ChannelCard";
 
 function ChannelList() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -58,13 +59,25 @@ function ChannelList() {
   }
 
   return (
-    <div className="p-4 text-white">
+    <div className="p-4 text-white" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* BACK BUTTON */}
+      {location.pathname.startsWith("/home/channels") && !location.pathname.includes("/channels/") && (
+        <div className="mb-3">
+          <button 
+            className="btn btn-outline-primary" 
+            onClick={() => navigate("/home")}
+          >
+            ← Back
+          </button>
+        </div>
+      )}
+      
       <h2 className="mb-4">Channels</h2>
 
       {channels.length === 0 ? (
         <p>No channels found.</p>
       ) : (
-        <div className="channel-list">
+        <div className="channel-list" style={{ overflowY: 'auto', flexGrow: 1 }}>
           {channels.map((channel) => (
             <ChannelCard
               key={channel.channelId}

@@ -5,7 +5,10 @@ import io.github.szatms.videolibrary.model.channelmodel.Channel;
 import io.github.szatms.videolibrary.model.channelmodel.dto.ChannelResponseDTO;
 import io.github.szatms.videolibrary.model.channelmodel.dto.ChannelSummaryDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoSummaryResponseDTO;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylist;
+import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistSummaryResponseDTO;
 import io.github.szatms.videolibrary.service.ChannelService;
+import io.github.szatms.videolibrary.service.UserPlaylistService;
 import io.github.szatms.videolibrary.service.UserService;
 import io.github.szatms.videolibrary.service.UserVideoService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ public class ChannelController {
     private final ChannelService channelService;
     private final UserService userService;
     private final UserVideoService userVideoService;
+    private final UserPlaylistService userPlaylistService;
 
     @GetMapping
     public List<ChannelSummaryDTO> getChannels() {
@@ -57,6 +61,20 @@ public class ChannelController {
                 .getUserId();
 
         return userVideoService.getVideosForChannel(
+                userId,
+                channelId
+        );
+    }
+    
+    @GetMapping("/{channelId}/playlists")
+    public List<UserPlaylistSummaryResponseDTO> getChannelPlaylists(
+            @PathVariable String channelId
+    ) {
+        String userId = userService
+                .getCurrentUser()
+                .getUserId();
+
+        return userPlaylistService.getPlaylistSummaryForChannel(
                 userId,
                 channelId
         );

@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import VideoDetail from "./VideoDetail";
 
 function VideoDetailWrapper() {
-  const { videoId } = useParams();
+  const { videoId, playlistId, channelId } = useParams();
   const navigate = useNavigate();
   
   const handleBack = () => {

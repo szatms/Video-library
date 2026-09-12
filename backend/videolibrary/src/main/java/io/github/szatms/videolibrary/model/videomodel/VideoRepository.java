@@ -10,4 +10,5 @@ public interface VideoRepository extends MongoRepository<Video, String> {
     Optional<Video> findByYoutubeId(String youtubeId);
     boolean existsByYoutubeId(String youtubeId);
     List<Video> findByVideoIdIn(Collection<String> videoIds);
+    Video getByVideoId(String videoId);
 }

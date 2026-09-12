@@ -1,7 +1,15 @@
 package io.github.szatms.videolibrary.controller;
 
+import io.github.szatms.videolibrary.mapper.NoteMapper;
 import io.github.szatms.videolibrary.mapper.UserVideoMapper;
 import io.github.szatms.videolibrary.mapper.VideoMapper;
+import io.github.szatms.videolibrary.model.notemodel.Note;
+import io.github.szatms.videolibrary.model.notemodel.NoteRepository;
+import io.github.szatms.videolibrary.model.notemodel.dto.AddToParentDTO;
+import io.github.szatms.videolibrary.model.notemodel.dto.NoteResponseDTO;
+import io.github.szatms.videolibrary.model.userplaylistitemmodel.UserPlaylistItem;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylist;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylistRepository;
 import io.github.szatms.videolibrary.model.uservideomodel.SortDirection;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideoSortBy;
@@ -10,6 +18,9 @@ import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoResponseD
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoSummaryResponseDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoUpdateDTO;
 import io.github.szatms.videolibrary.model.videomodel.Video;
+import io.github.szatms.videolibrary.service.NoteService;
+import io.github.szatms.videolibrary.service.UserPlaylistItemService;
+import io.github.szatms.videolibrary.service.UserPlaylistService;
 import io.github.szatms.videolibrary.service.UserVideoService;
 import io.github.szatms.videolibrary.service.VideoService;
 import io.github.szatms.videolibrary.security.CustomUserDetails;
@@ -19,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -33,6 +45,10 @@ public class UserVideoController {
     private final VideoService videoService;
     private final VideoMapper videoMapper;
     private final LinkUtils linkUtils;
+    private final UserPlaylistService userPlaylistService;
+    private final UserPlaylistItemService userPlaylistItemService;
+    private final NoteService noteService;
+    private final NoteMapper noteMapper;
 
     @GetMapping
     public List<UserVideoSummaryResponseDTO> getVideos(
@@ -134,8 +150,28 @@ public class UserVideoController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         String userId = userDetails.getUser().getUserId();
-        userVideoService.deleteVideo(userId, id);
+        userVideoService.deleteVideo(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/playlist/{id}")
+    public List<UserVideoSummaryResponseDTO> getAllForPlaylist(
+            @PathVariable String id,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        String userId = userDetails.getUser().getUserId();
+        List<UserPlaylistItem> items = userPlaylistItemService.getAllByPlaylistId(id);
+
+        List<UserVideoSummaryResponseDTO> results = new ArrayList<>();
+
+        for (UserPlaylistItem item : items) {
+            String userVideoId = item.getUserVideoId();
+            UserVideo userVideo = userVideoService.getVideo(userId, userVideoId);
+            Video video = videoService.getById(userVideo.getVideoId());
+            results.add(userVideoMapper.toSummaryResponseDTO(userVideo, videoMapper.toSummaryDTO(video)));
+        }
+
+        return results;
     }
 
     private Map<String, Video> getVideosById(List<UserVideo> userVideos) {
@@ -152,5 +188,53 @@ public class UserVideoController {
             throw new IllegalStateException("Video not found");
         }
         return video;
+    }
+
+    @GetMapping("/{id}/notes")
+    public List<NoteResponseDTO> getNotes(
+            @PathVariable String id,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        String userId = userDetails.getUser().getUserId();
+        
+        // Verify that the video belongs to the authenticated user
+        userVideoService.getVideo(userId, id);
+        
+        List<Note> notes = noteService.getNotesForParent(userId, id);
+
+        return notes.stream()
+                .map(noteMapper::toResponseDTO)
+                .toList();
+    }
+
+    @PostMapping("/{id}/notes/add")
+    public ResponseEntity<Void> addToParent(
+            @PathVariable String id,
+            @RequestBody AddToParentDTO dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        String userId = userDetails.getUser().getUserId();
+        
+        // Verify that the video belongs to the authenticated user
+        userVideoService.getVideo(userId, id);
+        
+        // Add notes to the parent video
+        noteService.addToParent(userId, dto);
+        
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/notes/remove")
+    public ResponseEntity<Void> removeFromParent(
+            @PathVariable String id,
+            @RequestBody AddToParentDTO dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        String userId = userDetails.getUser().getUserId();
+        
+        // Verify that the video belongs to the authenticated user
+        userVideoService.getVideo(userId, id);
+        
+        // Remove notes from the parent video
+        noteService.removeFromParent(userId, dto);
+        
+        return ResponseEntity.ok().build();
     }
 }

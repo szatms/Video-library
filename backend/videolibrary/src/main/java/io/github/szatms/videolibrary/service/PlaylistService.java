@@ -54,5 +54,9 @@ public class PlaylistService {
 
     public List<Playlist> getByIds(Iterable<String> playlistIds) {return playlistRepository.findAllById(playlistIds);}
 
+    public List<Playlist> getPlaylistsByChannel(String channelId) {
+        return playlistRepository.findByChannelId(channelId);
+    }
+
     public void deleteById(String playlistId) {playlistRepository.deleteById(playlistId);}
 }

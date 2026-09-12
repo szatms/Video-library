@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../services/api";
 
 const SORT_OPTIONS = [
@@ -75,6 +75,7 @@ const toSummaryItem = (userVideo) => ({
 
 function VideoList() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [videos, setVideos] = useState([]);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
@@ -101,7 +102,9 @@ function VideoList() {
           unwatchedFirst,
         },
       });
-      setVideos(res.data);
+      // Filter videos to only show those where inPlaylist is false
+      const filteredVideos = res.data.filter(video => !video.inPlaylist);
+      setVideos(filteredVideos);
       setError("");
     } catch (err) {
       if (err.code === "ERR_CANCELED") {
@@ -179,8 +182,37 @@ function VideoList() {
     }
   };
 
+  const toggleWatchedStatus = async (userVideoId, currentWatchedStatus) => {
+    try {
+      const res = await api.patch(`/uservideos/${userVideoId}`, {
+        watched: !currentWatchedStatus
+      });
+
+      // Update the local videos array to reflect the change
+      setVideos(prevVideos => 
+        prevVideos.map(video => 
+          video.id === userVideoId ? { ...video, watched: !currentWatchedStatus } : video
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling watched status:", err);
+    }
+  };
+
   return (
     <div className="p-3">
+
+      {/* BACK BUTTON */}
+      {location.pathname.startsWith("/home/videos") && !location.pathname.includes("/videos/") && (
+        <div className="mb-3">
+          <button 
+            className="btn btn-outline-primary" 
+            onClick={() => navigate("/home")}
+          >
+            ← Back
+          </button>
+        </div>
+      )}
 
       {/* ADD PANEL */}
       <div className="video-toolbar mb-3">
@@ -259,7 +291,7 @@ function VideoList() {
       )}
 
       {/* LIST */}
-      <div className="video-list">
+      <div className="video-list" style={{ overflowY: 'auto', flexGrow: 1 }}>
         {!loading && videos.length === 0 && (
           <div className="text-muted">No videos yet.</div>
         )}
@@ -277,33 +309,48 @@ function VideoList() {
                 className="video-list-thumbnail"
               />
 
-              <div className="min-w-0">
-                <div className="fw-semibold">{v.video.title}</div>
-                {v.video.channelTitle && (
-                  <div className="video-list-channel text-truncate">{v.video.channelTitle}</div>
-                )}
-                <div className="d-flex flex-wrap gap-3 mt-2 text-muted small">
-                  <span>{v.watched ? "Watched" : "Unwatched"}</span>
-                  {formatAddedAt(v.addedAt) && (
-                    <span>Added: {formatAddedAt(v.addedAt)}</span>
+                <div className="min-w-0">
+                  <div className="fw-semibold">{v.video.title}</div>
+                  {v.video.channelTitle && (
+                    <div className="video-list-channel text-truncate">{v.video.channelTitle}</div>
                   )}
-                  {formatDuration(v.video.durationSeconds) && (
-                    <span>{formatDuration(v.video.durationSeconds)}</span>
-                  )}
-                  <span>{(v.video.viewCount ?? 0).toLocaleString()} views</span>
+                  <div className="d-flex flex-wrap gap-3 mt-2 text-muted small">
+                    {formatAddedAt(v.addedAt) && (
+                      <span>Added: {formatAddedAt(v.addedAt)}</span>
+                    )}
+                    {formatDuration(v.video.durationSeconds) && (
+                      <span>{formatDuration(v.video.durationSeconds)}</span>
+                    )}
+                    <span>{(v.video.viewCount ?? 0).toLocaleString()} views</span>
+                    <span className="ms-2 text-muted small">
+                      {v.watched ? "Watched" : "Unwatched"}
+                    </span>
+                  </div>
                 </div>
-              </div>
             </div>
 
-            <button
-              type="button"
-              className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
-              onClick={(event) => handleDelete(event, v.id)}
-              disabled={deletingId === v.id}
-              aria-label={`Delete ${v.video.title}`}
-            >
-              {deletingId === v.id ? "..." : "X"}
-            </button>
+            <div className="d-flex flex-column align-items-center gap-2">
+              <button
+                type="button"
+                className={`btn btn-sm ${v.watched ? "btn-success" : "btn-outline-success"}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleWatchedStatus(v.id, v.watched);
+                }}
+                title={v.watched ? "Mark as unwatched" : "Mark as watched"}
+              >
+                {v.watched ? "✓" : "○"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
+                onClick={(event) => handleDelete(event, v.id)}
+                disabled={deletingId === v.id}
+                aria-label={`Delete ${v.video.title}`}
+              >
+                {deletingId === v.id ? "..." : "X"}
+              </button>
+            </div>
           </div>
         ))}
       </div>

@@ -2,6 +2,7 @@ package io.github.szatms.videolibrary.service;
 
 import io.github.szatms.videolibrary.exception.PythonMicroserviceUnavailableException;
 import io.github.szatms.videolibrary.integration.youtube.PythonVideoDataProvider;
+import io.github.szatms.videolibrary.integration.youtube.dto.PythonVideoResponseDTO;
 import io.github.szatms.videolibrary.integration.youtube.factory.VideoFactory;
 import io.github.szatms.videolibrary.model.videomodel.Video;
 import io.github.szatms.videolibrary.model.videomodel.VideoRepository;
@@ -25,12 +26,17 @@ public class VideoService {
                 .orElseGet(() -> {
                     try {
                         var response = provider.load(youtubeId);
-                        if (response == null || response.getId() == null || response.getId().isBlank()) {
+                        if (response == null || response.getItems() == null || response.getItems().isEmpty()) {
+                            throw new IllegalArgumentException("No video found for youtubeId: " + youtubeId);
+                        }
+                        
+                        PythonVideoResponseDTO.Item item = response.getItems().get(0);
+                        if (item == null || item.getId() == null || item.getId().isBlank()) {
                             throw new IllegalArgumentException("No video found for youtubeId: " + youtubeId);
                         }
 
                         channelService.getOrCreateChannel(
-                                response.getChannelId()
+                                item.getChannelId()
                         );
 
                         Video video = videoFactory.fromItem(response);

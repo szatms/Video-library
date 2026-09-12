@@ -10,4 +10,5 @@ public interface UserVideoRepository extends MongoRepository<UserVideo, String> 
     Optional<UserVideo> findByUserIdAndVideoId(String userId, String videoId);
     List<UserVideo> findAllByUserId(String userId, Sort sort);
     long countByVideoId(String videoId);
+    UserVideo getById(String id);
 }

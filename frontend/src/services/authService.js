@@ -14,8 +14,6 @@ export const login = async (username, password) => {
     throw new Error("Login response did not contain a valid token.");
   }
 
-  await api.get("/users/me");
-
   return res.data;
 };
 
@@ -24,6 +22,13 @@ export const register = async (username, password) => {
     username,
     password,
   });
+
+  const token = res.data?.token;
+  const tokenSaved = setToken(token);
+
+  if (!tokenSaved) {
+    throw new Error("Registration response did not contain a valid token.");
+  }
 
   return res.data;
 };

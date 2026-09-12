@@ -12,7 +12,7 @@ public class LinkUtils {
     private static final Pattern PATH_ID = Pattern.compile(
             "(?i)(?:youtu\\.be/|youtube(?:-nocookie)?\\.com/(?:embed/|shorts/|v/))([A-Za-z0-9_-]{11})(?:\\b|/|\\?|&|#|$)"
     );
-    private static final Pattern PLAYLIST_ID = Pattern.compile("(?i)list=([A-Za-z0-9_-]{34})");
+    private static final Pattern PLAYLIST_ID = Pattern.compile("(?i)list=([A-Za-z0-9_-]+)");
 
     public String getYTVideoId(String link){
         if (link == null) {

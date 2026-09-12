@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,8 +21,9 @@ public class UserPlaylist {
     private String userId;
     private String playlistId;
 
-    private String note;
+    private List<String> noteIds;
     private boolean watched;
+    private List<String> items;
 
     Instant addedAt;
 }

@@ -35,13 +35,9 @@ public class PythonPlaylistResponseDTO {
     
     public String getThumbnailUrl() {
         if (snippet != null && snippet.getThumbnails() != null) {
-            // Prefer maxres thumbnail if available, otherwise try others
-            if (snippet.getThumbnails().getMaxres() != null) {
-                return snippet.getThumbnails().getMaxres().getUrl();
-            } else if (snippet.getThumbnails().getHigh() != null) {
+            // Prefer high resolution thumbnail if available, otherwise default
+            if (snippet.getThumbnails().getHigh() != null) {
                 return snippet.getThumbnails().getHigh().getUrl();
-            } else if (snippet.getThumbnails().getMedium() != null) {
-                return snippet.getThumbnails().getMedium().getUrl();
             } else if (snippet.getThumbnails().getDefaultThumbnail() != null) {
                 return snippet.getThumbnails().getDefaultThumbnail().getUrl();
             }
@@ -50,7 +46,10 @@ public class PythonPlaylistResponseDTO {
     }
     
     public Integer getVideoCount() {
-        return contentDetails != null ? contentDetails.getItemCount() : null;
+        if (contentDetails != null && contentDetails.getItemCount() != null) {
+            return contentDetails.getItemCount();
+        }
+        return null;
     }
     
     public void setVideoCount(Integer videoCount) {

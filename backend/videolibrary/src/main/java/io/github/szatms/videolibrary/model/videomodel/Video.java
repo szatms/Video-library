@@ -18,8 +18,6 @@ import java.time.Instant;
 public class Video {
     @Id
     private String videoId;
-
-    @Indexed(unique = true)
     private String youtubeId;
 
     private String title;

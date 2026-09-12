@@ -21,7 +21,7 @@ public class UserVideoMapper {
 
         dto.setId(userVideo.getId());
         dto.setWatched(userVideo.isWatched());
-        dto.setNote(userVideo.getNote());
+        dto.setNoteIds(userVideo.getNoteIds());
         dto.setTimestamps(userVideo.getTimestamps());
         dto.setInPlaylist(userVideo.isInPlaylist());
         dto.setAddedAt(userVideo.getAddedAt());
@@ -34,7 +34,7 @@ public class UserVideoMapper {
 
         dto.setId(userVideo.getId());
         dto.setWatched(userVideo.isWatched());
-        dto.setNote(userVideo.getNote());
+        dto.setNoteCount(userVideo.getNoteIds() != null ? userVideo.getNoteIds().size() : 0);
         dto.setInPlaylist(userVideo.isInPlaylist());
         dto.setAddedAt(userVideo.getAddedAt());
         dto.setVideo(videoDto);
@@ -47,11 +47,6 @@ public class UserVideoMapper {
     public void updateEntityFromDTO(UserVideoUpdateDTO dto, UserVideo entity) {
         if (dto == null || entity == null)
             return;
-
-        if (dto.getNote() != null) {
-            String note = dto.getNote().trim();
-            entity.setNote(note.isEmpty() ? null : note);
-        }
 
         if (dto.getTimestamps() != null) {
             List<Timestamp> timestamps = dto.getTimestamps();

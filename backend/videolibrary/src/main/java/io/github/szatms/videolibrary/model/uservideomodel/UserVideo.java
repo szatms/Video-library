@@ -15,7 +15,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Document(collection = "uservideos")
-@CompoundIndex(def = "{'userId': 1, 'videoId': 1}", unique = true)
 public class UserVideo {
     @Id
     private String id;
@@ -23,7 +22,7 @@ public class UserVideo {
     private String userId;
     private String videoId;
 
-    private String note;
+    private List<String> noteIds;
     private boolean watched;
     private List<Timestamp> timestamps;
     private boolean inPlaylist;

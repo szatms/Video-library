@@ -89,6 +89,27 @@ curl -X 'GET' \
 3. Run the application: `./start.sh`
 4. The service will only accept connections from localhost
 
+## Docker Deployment
+
+You can also run the service using Docker:
+
+```bash
+# Build and run with Docker
+docker build -t youtube-data-harvester .
+docker run -p 8000:8000 -e YOUTUBE_DATA_API_KEY=your_api_key_here youtube-data-harvester
+
+# Or using docker-compose
+docker-compose up
+```
+
+### Important Notes:
+
+1. The service now binds to `0.0.0.0` instead of `127.0.0.1` to accept external connections
+2. Make sure to set the `YOUTUBE_DATA_API_KEY` environment variable with your valid YouTube Data API v3 key
+3. The service will be accessible at `http://localhost:8000` when running with `-p 8000:8000`
+
+If you're running this service in a containerized environment where it needs to communicate with other containers, it should now work correctly as it's listening on all interfaces.
+
 ## Configuration
 
 The service reads the YouTube Data API v3 key from the environment variable `YOUTUBE_DATA_API_KEY` as defined in `config.py`.
