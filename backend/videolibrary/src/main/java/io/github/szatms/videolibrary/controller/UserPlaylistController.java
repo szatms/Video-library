@@ -5,7 +5,9 @@ import io.github.szatms.videolibrary.mapper.UserPlaylistMapper;
 import io.github.szatms.videolibrary.model.notemodel.dto.AddToParentDTO;
 import io.github.szatms.videolibrary.model.playlistmodel.Playlist;
 import io.github.szatms.videolibrary.model.playlistmodel.dto.PlaylistResponseDTO;
+import io.github.szatms.videolibrary.model.userplaylistmodel.SortDirection;
 import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylist;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylistSortBy;
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistCreateDTO;
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistResponseDTO;
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistUpdateDTO;
@@ -34,10 +36,12 @@ public class UserPlaylistController {
 
     @GetMapping
     public List<UserPlaylistResponseDTO> getPlaylists(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) UserPlaylistSortBy sortBy,
+            @RequestParam(required = false) SortDirection direction
     ) {
         String userId = userDetails.getUser().getUserId();
-        List<UserPlaylist> userPlaylists = userPlaylistService.getPlaylists(userId);
+        List<UserPlaylist> userPlaylists = userPlaylistService.getPlaylists(userId, sortBy, direction);
         return userPlaylists.stream()
                 .map(userPlaylist -> {
                     Playlist playlist = playlistService.getById(userPlaylist.getPlaylistId());

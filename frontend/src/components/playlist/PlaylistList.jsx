@@ -6,6 +6,7 @@ import ContentCard from "../misc/ContentCard";
 const SORT_OPTIONS = [
   { value: "ADDED_AT", label: "Date added" },
   { value: "NAME", label: "Name" },
+  { value: "WATCHED", label: "Watched" },
 ];
 
 const formatAddedAt = (addedAt) => {

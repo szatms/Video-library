@@ -8,17 +8,23 @@ import io.github.szatms.videolibrary.model.playlistmodel.PlaylistRepository;
 import io.github.szatms.videolibrary.model.playlistmodel.dto.PlaylistSummaryDTO;
 import io.github.szatms.videolibrary.model.userplaylistitemmodel.UserPlaylistItem;
 import io.github.szatms.videolibrary.model.userplaylistitemmodel.UserPlaylistItemRepository;
+import io.github.szatms.videolibrary.model.userplaylistmodel.SortDirection;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylist;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylistRepository;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylistSortBy;
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistSummaryResponseDTO;
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistUpdateDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideo;
 import io.github.szatms.videolibrary.model.usermodel.UserRepository;
-import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylist;
-import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylistRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Comparator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -80,14 +86,32 @@ public class UserPlaylistService {
         return userPlaylistRepository.save(userPlaylist);
     }
 
-    public List<UserPlaylist> getPlaylists(String userId) {
-        if (userId == null || userId.isBlank())
+    public List<UserPlaylist> getPlaylists(
+            String userId,
+            UserPlaylistSortBy sortBy,
+            SortDirection direction
+    ) {
+        if (userId == null || userId.isBlank()) {
             throw new IllegalArgumentException("Invalid userId");
-
-        if (!userRepository.existsById(userId))
+        }
+        if (!userRepository.existsById(userId)) {
             throw new IllegalStateException("User not found");
+        }
 
-        return userPlaylistRepository.findAllByUserId(userId, Sort.unsorted());
+        UserPlaylistSortBy effectiveSortBy = sortBy == null ? UserPlaylistSortBy.ADDED_AT : sortBy;
+        SortDirection effectiveDirection = direction == null ? SortDirection.DESC : direction;
+
+        List<UserPlaylist> userPlaylists;
+        if (effectiveSortBy == UserPlaylistSortBy.NAME) {
+            userPlaylists = getPlaylistsSortedByName(userId, effectiveDirection);
+        } else {
+            userPlaylists = userPlaylistRepository.findAllByUserId(
+                    userId,
+                    buildDatabaseSort(effectiveSortBy, effectiveDirection)
+            );
+        }
+        
+        return userPlaylists;
     }
 
     public List<UserPlaylist> getPlaylistForChannel(String userId, String channelId){
@@ -182,6 +206,53 @@ public class UserPlaylistService {
         // Delete the UserPlaylist itself
         trashService.moveUserPlaylistToTrash(userPlaylist, restoreId);
         userPlaylistRepository.delete(userPlaylist);
+    }
+
+    private List<UserPlaylist> getPlaylistsSortedByName(String userId, SortDirection direction) {
+        List<UserPlaylist> userPlaylists = userPlaylistRepository.findAllByUserId(
+                userId,
+                Sort.by(Sort.Direction.DESC, "addedAt")
+        );
+
+        // Get all playlists to fetch their titles
+        List<String> playlistIds = userPlaylists.stream()
+                .map(UserPlaylist::getPlaylistId)
+                .toList();
+        
+        Map<String, Playlist> playlistsById = playlistService.getByIds(playlistIds)
+                .stream()
+                .collect(Collectors.toMap(Playlist::getId, Function.identity()));
+
+        Comparator<UserPlaylist> comparator = Comparator.comparing(
+                (UserPlaylist userPlaylist) -> playlistsById.get(userPlaylist.getPlaylistId()).getTitle(),
+                Comparator.nullsLast(Comparator.naturalOrder())
+        );
+
+        if (direction == SortDirection.DESC) {
+            comparator = comparator.reversed();
+        }
+
+        return userPlaylists.stream()
+                .sorted(comparator)
+                .toList();
+    }
+
+    private Sort buildDatabaseSort(UserPlaylistSortBy sortBy, SortDirection direction) {
+        Sort.Direction sortDirection = direction == SortDirection.ASC
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+        if (sortBy == UserPlaylistSortBy.WATCHED) {
+            return Sort.by(
+                    new Sort.Order(sortDirection, "watched"),
+                    new Sort.Order(Sort.Direction.DESC, "addedAt")
+            );
+        }
+
+        // Default to ADDED_AT
+        return Sort.by(
+                new Sort.Order(sortDirection, "addedAt")
+        );
     }
 
     public List<String> getUserVideoIds(String userPlaylistId){
