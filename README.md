@@ -20,9 +20,9 @@ git clone https://github.com/szatms/Video-library
 
 ### 2. Create .env file
 
-Create a `.env` file in the root directory with the following content:
+Create a `.env` file in the root directory with the following content, then populate placeholders with your own values:
 
-# ==========================================
+```env# ==========================================
 # MongoDB
 # ==========================================
 
@@ -64,7 +64,7 @@ VITE_API_URL=http://localhost:8080/api
 
 MICROSERVICE_PORT=8000
 YOUTUBE_DATA_API_KEY=<YOUTUBE_DATA_API_KEY> 
-
+```
 ### 3. Run the application
 
 ```bash
