@@ -50,6 +50,7 @@ BACKEND_PORT=8080
 JWT_SECRET=<JWT_SECRET>
 JWT_EXPIRATION=3600000
 
+FRONTEND_URL=<FRONTEND_URL>
 
 # ==========================================
 # Frontend

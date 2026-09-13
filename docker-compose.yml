@@ -68,6 +68,7 @@ services:
       MONGO_PASSWORD: ${MONGO_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
+      FRONTEND_URL: ${FRONTEND_URL}
     depends_on:
       mongo:
         condition: service_healthy
