@@ -242,9 +242,11 @@ function NotesEditor({
       if (parentType === 'video') {
         const response = await api.get(`/uservideos/${parentId}/notes`);
         setAttachedNotes(response.data);
+      } else if (parentType === 'playlist') {
+        const response = await api.get(`/userplaylists/${parentId}/notes`);
+        setAttachedNotes(response.data);
       } else {
-        // For playlist, we would need to implement
-        console.warn("Fetching attached notes for playlist not implemented");
+        console.warn("Unsupported parent type for fetching attached notes:", parentType);
       }
     } catch (err) {
       console.error("Error fetching attached notes:", err);
@@ -271,9 +273,13 @@ function NotesEditor({
           parentId: parentId,
           noteIds: noteIds
         });
+      } else if (parentType === 'playlist') {
+        await api.post(`/userplaylists/${parentId}/notes/add`, {
+          parentId: parentId,
+          noteIds: noteIds
+        });
       } else {
-        // For playlist, we would need to update the note to include the playlist ID
-        throw new Error("Playlist note attachment not implemented yet");
+        throw new Error(`Unsupported parent type: ${parentType}`);
       }
       
       setShowAddNoteModal(false);
@@ -308,9 +314,13 @@ function NotesEditor({
           parentId: parentId,
           noteIds: noteIds
         });
+      } else if (parentType === 'playlist') {
+        await api.post(`/userplaylists/${parentId}/notes/remove`, {
+          parentId: parentId,
+          noteIds: noteIds
+        });
       } else {
-        // For playlist, we would need to update the note to remove the playlist ID
-        throw new Error("Playlist note removal not implemented yet");
+        throw new Error(`Unsupported parent type: ${parentType}`);
       }
       
       setShowRemoveNoteModal(false);

@@ -440,6 +440,14 @@ function Codices() {
                   </li>
                   <li className="nav-item">
                     <button 
+                      className={`nav-link ${activeTab === 'in-playlist-videos' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('in-playlist-videos')}
+                    >
+                      In-Playlist Videos
+                    </button>
+                  </li>
+                  <li className="nav-item">
+                    <button 
                       className={`nav-link ${activeTab === 'playlists' ? 'active' : ''}`}
                       onClick={() => setActiveTab('playlists')}
                     >
@@ -463,7 +471,7 @@ function Codices() {
                       <div>Loading videos...</div>
                     ) : (
                       <div className="row">
-                        {videos.map((video) => (
+                        {videos.filter(video => !video.inPlaylist).map((video) => (
                           <div 
                             key={video.id} 
                             className={`col-md-6 col-lg-4 mb-3 clickable-card ${selectedItems.includes(video.id) ? 'selected' : ''}`}
@@ -509,8 +517,67 @@ function Codices() {
                             </div>
                           </div>
                         ))}
-                        {videos.length === 0 && (
+                        {videos.filter(video => !video.inPlaylist).length === 0 && (
                           <div className="text-muted">No videos found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* In-Playlist Videos Tab */}
+                  <div className={`tab-pane fade ${activeTab === 'in-playlist-videos' ? 'show active' : ''}`}>
+                    {loadingContent ? (
+                      <div>Loading videos...</div>
+                    ) : (
+                      <div className="row">
+                        {videos.filter(video => video.inPlaylist).map((video) => (
+                          <div 
+                            key={video.id} 
+                            className={`col-md-6 col-lg-4 mb-3 clickable-card ${selectedItems.includes(video.id) ? 'selected' : ''}`}
+                            onClick={() => {
+                              if (selectedItems.includes(video.id)) {
+                                setSelectedItems(selectedItems.filter(id => id !== video.id));
+                              } else {
+                                setSelectedItems([...selectedItems, video.id]);
+                              }
+                            }}
+                          >
+                            <div className="card">
+                              <div className="card-body">
+                                <div className="d-flex align-items-start">
+                                  <div className="form-check me-2">
+                                    <input
+                                      type="checkbox"
+                                      className="form-check-input"
+                                      id={`video-${video.id}`}
+                                      checked={selectedItems.includes(video.id)}
+                                      readOnly
+                                    />
+                                    <label className="form-check-label" htmlFor={`video-${video.id}`}>
+                                    </label>
+                                  </div>
+                                  <img
+                                    src={video.video?.thumbnailUrl || video.thumbnailUrl}
+                                    alt={video.title || video.video?.title}
+                                    className="img-thumbnail me-2"
+                                    style={{ width: '80px', height: 'auto' }}
+                                  />
+                                  <div>
+                                    <h6 className="card-title mb-1">{video.title || video.video?.title}</h6>
+                                    <p className="card-text small text-muted mb-1">
+                                      {video.video?.channelTitle || video.channelTitle}
+                                    </p>
+                                    <p className="card-text small text-muted">
+                                      Added: {formatAddedAt(video.addedAt)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {videos.filter(video => video.inPlaylist).length === 0 && (
+                          <div className="text-muted">No videos in playlists found</div>
                         )}
                       </div>
                     )}
