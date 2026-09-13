@@ -22,7 +22,8 @@ git clone https://github.com/szatms/Video-library
 
 Create a `.env` file in the root directory with the following content, then populate placeholders with your own values:
 
-```env# ==========================================
+```env
+# ==========================================
 # MongoDB
 # ==========================================
 
