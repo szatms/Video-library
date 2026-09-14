@@ -200,159 +200,160 @@ function VideoList() {
   };
 
   return (
-    <div className="p-3">
+    <div className="d-flex h-100 overflow-hidden">
+      <div className="flex-grow-1 d-flex flex-column min-w-0 p-4">
+        {/* BACK BUTTON */}
+        {location.pathname.startsWith("/home/videos") && !location.pathname.includes("/videos/") && (
+          <div className="mb-4">
+            <button 
+              className="btn btn-outline-primary" 
+              onClick={() => navigate("/home")}
+            >
+              ← Back
+            </button>
+          </div>
+        )}
 
-      {/* BACK BUTTON */}
-      {location.pathname.startsWith("/home/videos") && !location.pathname.includes("/videos/") && (
-        <div className="mb-3">
-          <button 
-            className="btn btn-outline-primary" 
-            onClick={() => navigate("/home")}
-          >
-            ← Back
-          </button>
-        </div>
-      )}
+        {/* ADD PANEL */}
+        <div className="video-toolbar mb-4">
+          <div className="video-add-group">
+            <input
+              className="form-control"
+              placeholder="YouTube link or ID"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+            />
+            <button className="btn btn-success" onClick={handleAdd}>
+              Add
+            </button>
+          </div>
 
-      {/* ADD PANEL */}
-      <div className="video-toolbar mb-3">
-        <div className="video-add-group">
-          <input
-            className="form-control"
-            placeholder="YouTube link or ID"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button className="btn btn-success" onClick={handleAdd}>
-            Add
-          </button>
-        </div>
+          <div className="video-sort-panel" ref={sortMenuRef}>
+            <button
+              type="button"
+              className="btn btn-outline-light video-sort-trigger"
+              onClick={() => setSortMenuOpen((current) => !current)}
+              aria-expanded={sortMenuOpen}
+            >
+              <span className="text-start">
+                <span className="video-sort-trigger-label">Sort</span>
+                <span className="video-sort-trigger-value">{activeSortLabel}</span>
+              </span>
+              <i className={`bi ${sortMenuOpen ? "bi-chevron-up" : "bi-chevron-down"}`} aria-hidden="true" />
+            </button>
 
-        <div className="video-sort-panel" ref={sortMenuRef}>
-          <button
-            type="button"
-            className="btn btn-outline-light video-sort-trigger"
-            onClick={() => setSortMenuOpen((current) => !current)}
-            aria-expanded={sortMenuOpen}
-          >
-            <span className="text-start">
-              <span className="video-sort-trigger-label">Sort</span>
-              <span className="video-sort-trigger-value">{activeSortLabel}</span>
-            </span>
-            <i className={`bi ${sortMenuOpen ? "bi-chevron-up" : "bi-chevron-down"}`} aria-hidden="true" />
-          </button>
+            {sortMenuOpen && (
+              <div className="video-sort-menu">
+                <div className="video-sort-options" role="listbox" aria-label="Sort videos by">
+                  {SORT_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`video-sort-option ${sortBy === option.value ? "active" : ""}`}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setSortMenuOpen(false);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
 
-          {sortMenuOpen && (
-            <div className="video-sort-menu">
-              <div className="video-sort-options" role="listbox" aria-label="Sort videos by">
-                {SORT_OPTIONS.map((option) => (
+                <div className="video-sort-controls">
+                  <label className="video-sort-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={unwatchedFirst}
+                      onChange={(event) => setUnwatchedFirst(event.target.checked)}
+                    />
+                    <span>Unwatched first</span>
+                  </label>
+
                   <button
-                    key={option.value}
                     type="button"
-                    className={`video-sort-option ${sortBy === option.value ? "active" : ""}`}
-                    onClick={() => {
-                      setSortBy(option.value);
-                      setSortMenuOpen(false);
-                    }}
+                    className="btn btn-outline-light video-sort-direction"
+                    onClick={() => setDirection((current) => (current === "DESC" ? "ASC" : "DESC"))}
+                    aria-label={direction === "DESC" ? "Descending order" : "Ascending order"}
                   >
-                    {option.label}
+                    <i className={`bi ${direction === "DESC" ? "bi-arrow-down" : "bi-arrow-up"}`} aria-hidden="true" />
                   </button>
-                ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {error && (
+          <div className="text-danger mb-4">
+            {error}
+          </div>
+        )}
+
+        {/* LIST */}
+        <div className="flex-grow-1 overflow-auto">
+          {!loading && videos.length === 0 && (
+            <div className="text-muted">No videos yet.</div>
+          )}
+
+          {videos.map((v) => (
+            <div
+              key={v.id}
+              className="video-list-card d-flex gap-4 align-items-start justify-content-between mb-4"
+              onClick={() => navigate(`/home/videos/${v.id}`)}
+            >
+              <div className="d-flex gap-4 align-items-start min-w-0 flex-grow-1">
+                <img
+                  src={v.video.thumbnailUrl}
+                  alt={v.video.title}
+                  className="video-list-thumbnail"
+                />
+
+                  <div className="min-w-0">
+                    <div className="fw-semibold">{v.video.title}</div>
+                    {v.video.channelTitle && (
+                      <div className="video-list-channel text-truncate">{v.video.channelTitle}</div>
+                    )}
+                    <div className="d-flex flex-wrap gap-3 mt-2 text-muted small">
+                      {formatAddedAt(v.addedAt) && (
+                        <span>Added: {formatAddedAt(v.addedAt)}</span>
+                      )}
+                      {formatDuration(v.video.durationSeconds) && (
+                        <span>{formatDuration(v.video.durationSeconds)}</span>
+                      )}
+                      <span>{(v.video.viewCount ?? 0).toLocaleString()} views</span>
+                      <span className="ms-2 text-muted small">
+                        {v.watched ? "Watched" : "Unwatched"}
+                      </span>
+                    </div>
+                  </div>
               </div>
 
-              <div className="video-sort-controls">
-                <label className="video-sort-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={unwatchedFirst}
-                    onChange={(event) => setUnwatchedFirst(event.target.checked)}
-                  />
-                  <span>Unwatched first</span>
-                </label>
-
+              <div className="d-flex flex-column align-items-center gap-3">
                 <button
                   type="button"
-                  className="btn btn-outline-light video-sort-direction"
-                  onClick={() => setDirection((current) => (current === "DESC" ? "ASC" : "DESC"))}
-                  aria-label={direction === "DESC" ? "Descending order" : "Ascending order"}
+                  className={`btn btn-sm ${v.watched ? "btn-success" : "btn-outline-success"}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggleWatchedStatus(v.id, v.watched);
+                  }}
+                  title={v.watched ? "Mark as unwatched" : "Mark as watched"}
                 >
-                  <i className={`bi ${direction === "DESC" ? "bi-arrow-down" : "bi-arrow-up"}`} aria-hidden="true" />
+                  {v.watched ? "✓" : "○"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
+                  onClick={(event) => handleDelete(event, v.id)}
+                  disabled={deletingId === v.id}
+                  aria-label={`Delete ${v.video.title}`}
+                >
+                  {deletingId === v.id ? "..." : "X"}
                 </button>
               </div>
             </div>
-          )}
+          ))}
         </div>
-      </div>
-
-      {error && (
-        <div className="text-danger mb-3">
-          {error}
-        </div>
-      )}
-
-      {/* LIST */}
-      <div className="video-list" style={{ overflowY: 'auto', flexGrow: 1 }}>
-        {!loading && videos.length === 0 && (
-          <div className="text-muted">No videos yet.</div>
-        )}
-
-        {videos.map((v) => (
-          <div
-            key={v.id}
-            className="video-list-card d-flex gap-3 align-items-start justify-content-between"
-            onClick={() => navigate(`/home/videos/${v.id}`)}
-          >
-            <div className="d-flex gap-3 align-items-start min-w-0 flex-grow-1">
-              <img
-                src={v.video.thumbnailUrl}
-                alt={v.video.title}
-                className="video-list-thumbnail"
-              />
-
-                <div className="min-w-0">
-                  <div className="fw-semibold">{v.video.title}</div>
-                  {v.video.channelTitle && (
-                    <div className="video-list-channel text-truncate">{v.video.channelTitle}</div>
-                  )}
-                  <div className="d-flex flex-wrap gap-3 mt-2 text-muted small">
-                    {formatAddedAt(v.addedAt) && (
-                      <span>Added: {formatAddedAt(v.addedAt)}</span>
-                    )}
-                    {formatDuration(v.video.durationSeconds) && (
-                      <span>{formatDuration(v.video.durationSeconds)}</span>
-                    )}
-                    <span>{(v.video.viewCount ?? 0).toLocaleString()} views</span>
-                    <span className="ms-2 text-muted small">
-                      {v.watched ? "Watched" : "Unwatched"}
-                    </span>
-                  </div>
-                </div>
-            </div>
-
-            <div className="d-flex flex-column align-items-center gap-2">
-              <button
-                type="button"
-                className={`btn btn-sm ${v.watched ? "btn-success" : "btn-outline-success"}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  toggleWatchedStatus(v.id, v.watched);
-                }}
-                title={v.watched ? "Mark as unwatched" : "Mark as watched"}
-              >
-                {v.watched ? "✓" : "○"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
-                onClick={(event) => handleDelete(event, v.id)}
-                disabled={deletingId === v.id}
-                aria-label={`Delete ${v.video.title}`}
-              >
-                {deletingId === v.id ? "..." : "X"}
-              </button>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

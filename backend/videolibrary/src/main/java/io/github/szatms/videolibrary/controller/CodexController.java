@@ -1,8 +1,10 @@
 package io.github.szatms.videolibrary.controller;
 
 import io.github.szatms.videolibrary.mapper.CodexMapper;
-import io.github.szatms.videolibrary.model.codexmodel.dto.*;
 import io.github.szatms.videolibrary.model.codexmodel.Codex;
+import io.github.szatms.videolibrary.model.codexmodel.CodexSortBy;
+import io.github.szatms.videolibrary.model.codexmodel.SortDirection;
+import io.github.szatms.videolibrary.model.codexmodel.dto.*;
 import io.github.szatms.videolibrary.security.CustomUserDetails;
 import io.github.szatms.videolibrary.service.CodexService;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +23,12 @@ public class CodexController {
 
     @GetMapping
     public List<CodexSummaryResponseDTO> getCodices(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) CodexSortBy sortBy,
+            @RequestParam(required = false) SortDirection direction
     ) {
         String userId = userDetails.getUser().getUserId();
-        List<Codex> codices = codexService.getCodices(userId);
+        List<Codex> codices = codexService.getCodices(userId, sortBy, direction);
         return codices.stream()
                 .map(codexMapper::toCodexSummaryResponseDTO)
                 .toList();

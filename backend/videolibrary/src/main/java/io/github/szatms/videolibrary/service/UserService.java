@@ -71,23 +71,43 @@ public class UserService {
     }
 
     public UserResponseDTO adminUpdate(UserAdminUpdateDTO dto){
+        if (dto.getPassword() == null || dto.getPassword().isEmpty() || dto.getPassword().isBlank())
+            return adminUpdateWithoutPassword(dto);
+        else
+            return adminUpdateWithPassword(dto);
+    }
+
+    private UserResponseDTO adminUpdateWithPassword(UserAdminUpdateDTO dto){
         User user = userRepository.findByUsername(dto.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("Cannot find user"));
-
-        // Check if username is being changed to an existing one (but not to the same user's username)
+        
         if (dto.getUsername() != null) {
             String newUsername = dto.getUsername().trim();
-            // If the username is different from the current user's username, check if it's available
             if (!newUsername.equals(user.getUsername()) && !isValidUsername(newUsername)) {
                 throw new IllegalArgumentException("Username invalid or taken already");
             }
         }
-        
-        if (dto.getPassword() != null) {
-            //if (dto.getPassword().isBlank())
-            //    throw new IllegalArgumentException("Password cannot be empty");
+        user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
 
-            user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        if (dto.getEnabled() != null)
+            user.setEnabled(dto.getEnabled());
+
+        if (dto.getRole() == Role.ADMIN || dto.getRole() == Role.USER)
+            user.setRole(dto.getRole());
+
+        userRepository.save(user);
+        return userMapper.toResponseDTO(user);
+    }
+
+    private UserResponseDTO adminUpdateWithoutPassword(UserAdminUpdateDTO dto){
+        User user = userRepository.findByUsername(dto.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("Cannot find user"));
+
+        if (dto.getUsername() != null) {
+            String newUsername = dto.getUsername().trim();
+            if (!newUsername.equals(user.getUsername()) && !isValidUsername(newUsername)) {
+                throw new IllegalArgumentException("Username invalid or taken already");
+            }
         }
 
         if (dto.getEnabled() != null)

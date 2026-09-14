@@ -97,6 +97,7 @@ function Codices() {
   const [playlists, setPlaylists] = useState([]);
   const [notes, setNotes] = useState([]);
   const [loadingContent, setLoadingContent] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
   const sortMenuRef = useRef(null);
 
   const activeSortLabel = useMemo(
@@ -216,19 +217,21 @@ function Codices() {
   }, [showCreateModal]);
 
   const [selectedItems, setSelectedItems] = useState([]);
-  const [modalTitle, setModalTitle] = useState("");
 
   useEffect(() => {
     if (showCreateModal) {
       loadContent();
+      // Pre-fill the modal title with the current input value
+      setModalTitle(input);
     }
-  }, [showCreateModal, loadContent]);
+  }, [showCreateModal, loadContent, input]);
 
   // Close modal when navigating away
   useEffect(() => {
     return () => {
       if (showCreateModal) {
         setShowCreateModal(false);
+        setModalTitle("");
       }
     };
   }, [showCreateModal]);
@@ -725,6 +728,7 @@ function Codices() {
                         setShowCreateModal(false);
                         setModalTitle("");
                         setSelectedItems([]);
+                        setInput(""); // Clear the input field as well
                         await loadCodices();
                       } catch (err) {
                         console.error("Error creating codex:", err);

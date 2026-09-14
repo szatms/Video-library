@@ -3,6 +3,8 @@ package io.github.szatms.videolibrary.service;
 import io.github.szatms.videolibrary.mapper.*;
 import io.github.szatms.videolibrary.model.codexmodel.Codex;
 import io.github.szatms.videolibrary.model.codexmodel.CodexRepository;
+import io.github.szatms.videolibrary.model.codexmodel.CodexSortBy;
+import io.github.szatms.videolibrary.model.codexmodel.SortDirection;
 import io.github.szatms.videolibrary.model.codexmodel.dto.CodexCrudDTO;
 import io.github.szatms.videolibrary.model.codexmodel.dto.ContentResponseDTO;
 import io.github.szatms.videolibrary.model.notemodel.NoteRepository;
@@ -18,6 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -165,8 +171,44 @@ public class CodexService {
         return true;
     }
 
-    public List<Codex> getCodices(String userId){
-        return codexRepository.findAllByUserId(userId);
+    public List<Codex> getCodices(
+            String userId,
+            CodexSortBy sortBy,
+            SortDirection direction
+    ) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("Invalid userId");
+        }
+
+        CodexSortBy effectiveSortBy = sortBy == null ? CodexSortBy.ADDED_AT : sortBy;
+        SortDirection effectiveDirection = direction == null ? SortDirection.DESC : direction;
+
+        List<Codex> codices;
+        if (effectiveSortBy == CodexSortBy.NAME) {
+            codices = getCodicesSortedByName(userId, effectiveDirection);
+        } else {
+            // For ADDED_AT, we just return the list in the proper order (default is descending by addedAt)
+            codices = codexRepository.findAllByUserId(userId);
+        }
+        
+        return codices;
+    }
+
+    private List<Codex> getCodicesSortedByName(String userId, SortDirection direction) {
+        List<Codex> codices = codexRepository.findAllByUserId(userId);
+        
+        Comparator<Codex> comparator = Comparator.comparing(
+                Codex::getTitle,
+                Comparator.nullsLast(Comparator.naturalOrder())
+        );
+
+        if (direction == SortDirection.DESC) {
+            comparator = comparator.reversed();
+        }
+
+        return codices.stream()
+                .sorted(comparator)
+                .toList();
     }
 
     public void deleteCodex(String codexId){
