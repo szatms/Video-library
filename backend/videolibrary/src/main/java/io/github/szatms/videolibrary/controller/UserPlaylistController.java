@@ -57,7 +57,7 @@ public class UserPlaylistController {
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         String userId = userDetails.getUser().getUserId();
-        String youtubeId = linkUtils.getYTVideoId(dto.getUrl());
+        String youtubeId = linkUtils.getYTPlaylistId(dto.getUrl());
 
         if (youtubeId == null) {
             throw new IllegalArgumentException("Invalid YouTube URL");

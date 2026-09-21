@@ -46,4 +46,23 @@ public class LinkUtils {
 
         return null;
     }
+    
+    public String getYTPlaylistId(String link) {
+        if (link == null) {
+            return null;
+        }
+
+        String trimmed = link.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        // Extract playlist ID from list parameter in URL
+        Matcher playlistMatch = PLAYLIST_ID.matcher(trimmed);
+        if (playlistMatch.find()) {
+            return playlistMatch.group(1);
+        }
+
+        return null;
+    }
 }

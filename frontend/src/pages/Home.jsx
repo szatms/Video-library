@@ -150,7 +150,11 @@ function Home() {
         
         {sidebarCollapsed && (
           <div className="d-flex justify-content-center mt-2">
-            <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button 
+              className="btn btn-light" 
+              style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+              onClick={handleGoHome}
+            >
               <i className="bi bi-house"></i>
             </button>
           </div>
@@ -169,20 +173,8 @@ function Home() {
             onClick={() => navigate("/home/videos")}
           >
             {!sidebarCollapsed ? "Videos" : (
-              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", margin: "5px 0" }}>
                 <i className="bi bi-camera-video"></i>
-              </button>
-            )}
-          </li>
-
-          <li
-            className={`${isChannelsList || isChannelDetail ? "text-decoration-underline" : ""} ${sidebarCollapsed ? "d-flex justify-content-center" : ""}`}
-            style={{ cursor: "pointer" }}
-            onClick={handleOpenChannels}
-          >
-            {!sidebarCollapsed ? "Channels" : (
-              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <i className="bi bi-person-circle"></i>
               </button>
             )}
           </li>
@@ -193,8 +185,44 @@ function Home() {
             onClick={() => navigate("/home/playlists")}
           >
             {!sidebarCollapsed ? "Playlists" : (
-              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", margin: "5px 0" }}>
                 <i className="bi bi-list"></i>
+              </button>
+            )}
+          </li>
+
+          <li
+            className={`${location.pathname.startsWith("/home/notes") ? "text-decoration-underline" : ""} ${sidebarCollapsed ? "d-flex justify-content-center" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate("/home/notes")}
+          >
+            {!sidebarCollapsed ? "Notes" : (
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", margin: "5px 0" }}>
+                <i className="bi bi-journal-text"></i>
+              </button>
+            )}
+          </li>
+
+          <li
+            className={`${location.pathname.startsWith("/home/codices") ? "text-decoration-underline" : ""} ${sidebarCollapsed ? "d-flex justify-content-center" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate("/home/codices")}
+          >
+            {!sidebarCollapsed ? "Codices" : (
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", margin: "5px 0" }}>
+                <i className="bi bi-book"></i>
+              </button>
+            )}
+          </li>
+
+          <li
+            className={`${isChannelsList || isChannelDetail ? "text-decoration-underline" : ""} ${sidebarCollapsed ? "d-flex justify-content-center" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={handleOpenChannels}
+          >
+            {!sidebarCollapsed ? "Channels" : (
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", margin: "5px 0" }}>
+                <i className="bi bi-person-circle"></i>
               </button>
             )}
           </li>
@@ -219,14 +247,16 @@ function Home() {
         {/* SETTINGS */}
         {!sidebarCollapsed && <h6 className={`text-white fw-bold ${location.pathname === "/home/settings" ? "text-decoration-underline" : ""}`} style={{ cursor: "pointer" }} onClick={handleOpenSettings}>Settings</h6>}
         {sidebarCollapsed && (
-          <button
-            className="btn btn-link p-0 text-white fw-bold text-decoration-none text-start align-self-start"
-            onClick={handleOpenSettings}
-          >
-            <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <i className="bi bi-gear"></i>
+          <div className="d-flex justify-content-center">
+            <button
+              className="btn btn-link p-0 text-white fw-bold text-decoration-none"
+              onClick={handleOpenSettings}
+            >
+              <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", margin: "5px 0" }}>
+                <i className="bi bi-gear"></i>
+              </button>
             </button>
-          </button>
+          </div>
         )}
 
         <div className="mt-auto">

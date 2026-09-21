@@ -10,6 +10,8 @@ A Spring Boot + React web-app to organize and monitor YouTube playlists and vide
 - Docker
 - Docker-compose
 
+No separate MongoDB, Java, Node.js, Python, or Maven installation is required.
+
 ## Setup Instructions
 
 ### 1. Clone the repository
@@ -20,55 +22,68 @@ git clone https://github.com/szatms/Video-library
 
 ### 2. Create .env file
 
-Create a `.env` file in the root directory with the following content, then populate placeholders with your own values:
-
-```env
-# ==========================================
-# MongoDB
-# ==========================================
-
-MONGO_USERNAME=<MONGODB_USERNAME>
-MONGO_PASSWORD=<MONGODB_PASSWORD>
-MONGO_DATABASE=video-library
-MONGO_PORT=27017
-
-
-# ==========================================
-# MongoExpress
-# ==========================================
-
-MONGO_EXPRESS_USERNAME=<MONGOEXPRESS_USERNAME>
-MONGO_EXPRESS_PASSWORD=<MONGOEXPRESS_PASSWORD>
-
-
-# ==========================================
-# Backend
-# ==========================================
-
-BACKEND_PORT=8080
-
-JWT_SECRET=<JWT_SECRET>
-JWT_EXPIRATION=3600000
-
-FRONTEND_URL=<FRONTEND_URL>
-
-# ==========================================
-# Frontend
-# ==========================================
-
-FRONTEND_PORT=5173
-VITE_API_URL=http://localhost:8080/api
-
-
-# ==========================================
-# YouTube Harvester Microservice
-# ==========================================
-
-MICROSERVICE_PORT=8000
-YOUTUBE_DATA_API_KEY=<YOUTUBE_DATA_API_KEY> 
+```bash
+cp .env.example .env
 ```
-### 3. Run the application
+### 3. Configure .env
+
+Replace <MACHINE_IP> with the IP address of the machine running the application. This is the address other devices on your network will use to reach the application.
+
+A brief summary of the variables:
+
+| Configuration          | User needs to provide? | What it is                                |
+| ---------------------- | ---------------------- | ----------------------------------------- |
+| MongoDB username       | Yes                    | MongoDB admin username                    |
+| MongoDB password       | Yes                    | MongoDB password                          |
+| Mongo Express username | Yes                    | Mongo Express login                       |
+| Mongo Express password | Yes                    | Mongo Express login password              |
+| JWT secret             | Yes                    | Secret used to sign authentication tokens |
+| YouTube Data API key   | Yes                    | Google/YouTube API key                    |
+| Machine IP             | Yes                    | IP address of the Docker host             |
+| Ports                  | Usually no             | Change only if they conflict              |
+
+Generate a JWT secret:
+
+```bash
+openssl rand -base64 32
+```
+
+Then copy the generated value into JWT_SECRET.
+
+You need a YouTube Data API v3 key from Google Cloud. Enable the YouTube Data API v3 for your project, create an API key, and paste it into `YOUTUBE_DATA_API_KEY`.
+
+You can get started on `https://console.cloud.google.com/`.
+
+Example .env:
+
+```
+MONGO_USERNAME=admin
+MONGO_PASSWORD=your-secure-password
+
+MONGO_EXPRESS_USERNAME=admin
+MONGO_EXPRESS_PASSWORD=your-secure-password
+
+JWT_SECRET=your-secret
+
+FRONTEND_URL=http://192.168.1.50:5173
+VITE_API_URL=http://192.168.1.50:8080/api
+
+YOUTUBE_DATA_API_KEY=your-api-key
+```
+
+### 4. Run the application
 
 ```bash
 docker compose up --build -d
 ```
+
+Then confirm by running `docker compose ps`
+
+### 5. Open the application
+Once the containers are running, open:
+
+http://<MACHINE_IP>:5173
+
+For example:
+
+http://192.168.1.50:5173
