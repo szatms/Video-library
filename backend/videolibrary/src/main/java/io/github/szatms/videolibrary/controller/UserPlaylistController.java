@@ -13,6 +13,7 @@ import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistRes
 import io.github.szatms.videolibrary.model.userplaylistmodel.dto.UserPlaylistUpdateDTO;
 import io.github.szatms.videolibrary.service.NoteService;
 import io.github.szatms.videolibrary.service.PlaylistService;
+import io.github.szatms.videolibrary.service.RefreshService;
 import io.github.szatms.videolibrary.service.UserPlaylistService;
 import io.github.szatms.videolibrary.security.CustomUserDetails;
 import io.github.szatms.videolibrary.utils.LinkUtils;
@@ -33,6 +34,7 @@ public class UserPlaylistController {
     private final PlaylistService playlistService;
     private final LinkUtils linkUtils;
     private final NoteService noteService;
+    private final RefreshService refreshService;
 
     @GetMapping
     public List<UserPlaylistResponseDTO> getPlaylists(
@@ -134,5 +136,17 @@ public class UserPlaylistController {
         String userId = userDetails.getUser().getUserId();
         userPlaylistService.deletePlaylist(userId, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/refresh")
+    public ResponseEntity<Void> refreshPlaylist(
+            @PathVariable String id,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        String userId = userDetails.getUser().getUserId();
+        userPlaylistService.getPlaylist(userId, id);
+
+        refreshService.updatePlaylistAlone(id);
+        return ResponseEntity.ok().build();
     }
 }

@@ -195,6 +195,9 @@ function PlaylistList() {
           </button>
         </div>
       )}
+      
+      {/* PAGE TITLE */}
+      <h1 className="mb-3">Playlists</h1>
 
       {/* ADD PANEL */}
       <div className="video-toolbar mb-3">

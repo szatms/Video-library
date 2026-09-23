@@ -6,6 +6,7 @@ import io.github.szatms.videolibrary.integration.youtube.factory.PlaylistFactory
 import io.github.szatms.videolibrary.integration.youtube.factory.VideoFactory;
 import io.github.szatms.videolibrary.model.playlistmodel.Playlist;
 import io.github.szatms.videolibrary.model.playlistmodel.PlaylistRepository;
+import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylistRepository;
 import io.github.szatms.videolibrary.model.videomodel.Video;
 import io.github.szatms.videolibrary.model.videomodel.VideoRepository;
 import io.github.szatms.videolibrary.settings.appsettings.AppSettings;
@@ -17,7 +18,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +36,8 @@ public class RefreshService {
     private final VideoFactory videoFactory;
     private final PlaylistFactory playlistFactory;
     private final AppSettingsService appSettingsService;
+    private final AppSettingsRepository appSettingsRepository;
+    private final UserPlaylistRepository userPlaylistRepository;
     
     @Scheduled(cron = "${refresh.cron.expression:0 0 0 * * ?}")
     public void refreshAllVideosAndPlaylists() {
@@ -43,18 +45,49 @@ public class RefreshService {
         
         // Get update period from settings
         AppSettings appSettings = appSettingsService.getAppSettings();
-        int updatePeriod = appSettings.getUpdatePeriod() != null ? appSettings.getUpdatePeriod() : 1;
         
-        // Process videos in batches
-        processVideosInBatches(updatePeriod);
-        
-        // Process playlists in batches
-        processPlaylistsInBatches(updatePeriod);
+        // Check if we should refresh based on contentUpdated timestamp and updatePeriod
+        if (shouldRefresh(appSettings)) {
+            logger.info("Performing full refresh based on update period settings");
+
+            processVideosInBatches();
+            
+            processPlaylistsInBatches();
+
+            updateContentUpdatedTimestamp(appSettings);
+        } else {
+            logger.info("Skipping refresh - content was updated within the allowed period");
+        }
         
         logger.info("Refresh process completed");
     }
     
-    private void processVideosInBatches(int updatePeriod) {
+    private boolean shouldRefresh(AppSettings appSettings) {
+        if (appSettings == null || appSettings.getContentUpdated() == null) {
+            return true; // If no timestamp exists, refresh
+        }
+        
+        if (appSettings.getUpdatePeriod() == null) {
+            return true; // If no update period configured, refresh
+        }
+        
+        // Check if enough time has passed since last content update
+        Instant now = Instant.now();
+        Instant lastUpdate = appSettings.getContentUpdated();
+        long secondsSinceLastUpdate = now.getEpochSecond() - lastUpdate.getEpochSecond();
+        long secondsInPeriod = appSettings.getUpdatePeriod() * 24 * 60 * 60; // Convert days to seconds
+        
+        return secondsSinceLastUpdate >= secondsInPeriod;
+    }
+    
+    private void updateContentUpdatedTimestamp(AppSettings appSettings) {
+        if (appSettings != null) {
+            appSettings.setContentUpdated(Instant.now());
+            appSettingsRepository.save(appSettings);
+        }
+    }
+    
+    private void processVideosInBatches() {
         AtomicInteger totalUpdates = new AtomicInteger(0);
         AtomicInteger successfulUpdates = new AtomicInteger(0);
         Set<String> erroredVideoIds = ConcurrentHashMap.newKeySet();
@@ -113,7 +146,34 @@ public class RefreshService {
         }
     }
     
-    private void processPlaylistsInBatches(int updatePeriod) {
+    public void updatePlaylistAlone(String userPlaylistId) {
+        String playlistId = userPlaylistRepository.getById(userPlaylistId).getPlaylistId();
+        logger.info("Updating playlist alone: {}", playlistId);
+        
+        try {
+            Playlist playlist = playlistRepository.findById(playlistId)
+                    .orElseThrow(() -> new RuntimeException("Playlist not found with ID: " + playlistId));
+            
+            String youtubeId = playlist.getYoutubeId();
+            if (youtubeId == null) {
+                logger.warn("Playlist {} has no YouTube ID", playlistId);
+                return;
+            }
+            
+            logger.debug("Refreshing playlist with YouTube ID: {}", youtubeId);
+            var response = pythonPlaylistDataProvider.load(youtubeId);
+            Playlist updatedPlaylist = playlistFactory.fromItem(response);
+            updatedPlaylist.setId(playlist.getId());
+            playlistRepository.save(updatedPlaylist);
+            
+            logger.info("Successfully updated playlist: {}", youtubeId);
+        } catch (Exception e) {
+            logger.error("Error updating playlist {}: {}", playlistId, e.getMessage(), e);
+            throw new RuntimeException("Failed to update playlist: " + playlistId, e);
+        }
+    }
+    
+    private void processPlaylistsInBatches() {
         AtomicInteger totalUpdates = new AtomicInteger(0);
         AtomicInteger successfulUpdates = new AtomicInteger(0);
         Set<String> erroredPlaylistIds = ConcurrentHashMap.newKeySet();

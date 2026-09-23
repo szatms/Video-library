@@ -17,4 +17,5 @@ public class AppSettingsDTO {
     private Instant createdAt;
     private Instant updatedAt;
     private String updatedById;
+    private Instant contentUpdated;
 }

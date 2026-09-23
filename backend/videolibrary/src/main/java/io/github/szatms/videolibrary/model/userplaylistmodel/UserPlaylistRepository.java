@@ -15,4 +15,6 @@ public interface UserPlaylistRepository extends MongoRepository<UserPlaylist, St
     
     @Query("{'userId': ?0, 'playlistId': {$in: ?1}}")
     List<UserPlaylist> findByUserIdAndPlaylistIds(String userId, List<String> playlistIds);
+
+    UserPlaylist getById(String id);
 }

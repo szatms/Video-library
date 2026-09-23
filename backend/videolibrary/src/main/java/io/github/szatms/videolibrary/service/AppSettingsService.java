@@ -40,6 +40,7 @@ public class AppSettingsService {
         appSettings.setCreatedAt(Instant.now());
         appSettings.setUpdatedAt(appSettings.getCreatedAt());
         appSettings.setUpdatedById(null);
+        appSettings.setContentUpdated(Instant.now());
 
         return appSettingsRepository.save(appSettings);
     }

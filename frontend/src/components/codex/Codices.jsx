@@ -286,6 +286,9 @@ function Codices() {
           </button>
         </div>
       )}
+      
+      {/* PAGE TITLE */}
+      <h1 className="mb-3">Codices</h1>
 
       {/* ADD PANEL */}
       <div className="video-toolbar mb-3">

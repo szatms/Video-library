@@ -213,6 +213,9 @@ function VideoList() {
             </button>
           </div>
         )}
+        
+        {/* PAGE TITLE */}
+        <h1 className="mb-4">Videos</h1>
 
         {/* ADD PANEL */}
         <div className="video-toolbar mb-4">
