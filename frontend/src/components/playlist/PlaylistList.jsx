@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../services/api";
 import ContentCard from "../misc/ContentCard";
+import SimpleLoadingModal from "../misc/SimpleLoadingModal";
 
 const SORT_OPTIONS = [
   { value: "ADDED_AT", label: "Date added" },
@@ -73,6 +74,7 @@ function PlaylistList() {
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState("ADDED_AT");
   const [direction, setDirection] = useState("DESC");
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
   const sortMenuRef = useRef(null);
 
   const activeSortLabel = useMemo(
@@ -139,6 +141,7 @@ function PlaylistList() {
     }
 
     try {
+      setShowLoadingModal(true);
       const res = await api.post("/userplaylists", { url: input });
       const createdPlaylist = toSummaryItem(res.data);
       setPlaylists((current) => [createdPlaylist, ...current]);
@@ -147,6 +150,8 @@ function PlaylistList() {
     } catch (err) {
       console.error("PLAYLIST ADD ERROR:", err);
       setError("Could not add the playlist.");
+    } finally {
+      setShowLoadingModal(false);
     }
   };
 
@@ -361,6 +366,9 @@ function PlaylistList() {
             </div>
           </div>
         )}
+
+        {/* LOADING MODAL */}
+        <SimpleLoadingModal show={showLoadingModal} />
     </div>
   );
 }

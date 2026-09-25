@@ -290,3 +290,14 @@ body {
 .modal-backdrop {
   display: none;
 }
+
+/* Flashing effect for success */
+@keyframes flash {
+  0% { background-color: #2d6a4f; }
+  50% { background-color: #1b4332; }
+  100% { background-color: #2d6a4f; }
+}
+
+.flash-success .modal-content {
+  animation: flash 0.5s ease-in-out 4;
+}

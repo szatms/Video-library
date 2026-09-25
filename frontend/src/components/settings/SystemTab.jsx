@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "../../services/api";
+import LoadingModal from "../misc/LoadingModal";
 
 function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
   const [systemSettings, setSystemSettings] = useState({
@@ -22,6 +23,10 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
   const [newUserError, setNewUserError] = useState(null);
   const [newUserSuccess, setNewUserSuccess] = useState(false);
   const [pendingUpdates, setPendingUpdates] = useState({});
+  const [showRefreshModal, setShowRefreshModal] = useState(false);
+  const [refreshLogs, setRefreshLogs] = useState([]);
+  const [refreshProgress, setRefreshProgress] = useState(0);
+  const [maxRefreshProgress, setMaxRefreshProgress] = useState(100);
 
   // Auto-dismiss messages after 5 seconds
   useEffect(() => {
@@ -238,13 +243,62 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
   // Manual refresh handler
   const handleManualRefresh = async () => {
     try {
+      setShowRefreshModal(true);
+      setRefreshLogs([]);
+      setRefreshProgress(0);
+      setMaxRefreshProgress(100);
       setLoading(true);
       setError(null);
       setSuccess(false);
       
+      // Simulate progress based on known refresh structure
+      // Based on backend logs, we know there are:
+      // 1. Video processing (batched) - around 30-40% of progress
+      // 2. Playlist processing (batched) - around 30-40% of progress  
+      // 3. Finalizing - around 10-20% of progress
+      // We'll set up a realistic progress simulation
+      
+      // Set up max progress - roughly 100 units for the whole process
+      setMaxRefreshProgress(100);
+      
+      // Add initial log message
+      setRefreshLogs(prev => [...prev, "Starting refresh of videos and playlists"]);
+      
+      // Simulate progress updates with more realistic timing
+      let currentProgress = 0;
+      const progressInterval = setInterval(() => {
+        currentProgress += Math.floor(Math.random() * 3) + 1; // Random increment between 1-3
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          clearInterval(progressInterval);
+        }
+        setRefreshProgress(currentProgress);
+        
+        // Add log messages at key progress points
+        if (currentProgress === 25) {
+          setRefreshLogs(prev => [...prev, "Starting video refresh process"]);
+        } else if (currentProgress === 50) {
+          setRefreshLogs(prev => [...prev, "Video refresh completed. Starting playlist refresh"]);
+        } else if (currentProgress === 75) {
+          setRefreshLogs(prev => [...prev, "Starting playlist refresh process"]);
+        } else if (currentProgress === 90) {
+          setRefreshLogs(prev => [...prev, "Playlist refresh completed. Finalizing..."]);
+        }
+      }, 150);
+      
       await api.post(`/admin/refresh`);
       
-      setSuccess("refresh");
+      clearInterval(progressInterval);
+      setRefreshProgress(100);
+      setRefreshLogs(prev => [...prev, "Refresh process completed"]);
+      
+      // Show success after a short delay
+      setTimeout(() => {
+        setSuccess("refresh");
+        setTimeout(() => {
+          setShowRefreshModal(false);
+        }, 2000);
+      }, 200);
     } catch (err) {
       if (err.response?.status === 403) {
         setError("Access denied: Insufficient permissions to refresh");
@@ -279,7 +333,7 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
     }
   };
 
-  if (loadingUser || loading || userLoading) {
+  if (loadingUser || userLoading) {
     return <div className="p-4">Loading...</div>;
   }
 
@@ -384,6 +438,16 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
           {loading ? "Refreshing..." : "Refresh Now"}
         </button>
       </div>
+
+          <LoadingModal 
+            show={showRefreshModal}
+            title="Refreshing Videos and Playlists"
+            message="Please wait while we refresh your content..."
+            logs={refreshLogs}
+            progress={refreshProgress}
+            maxProgress={maxRefreshProgress}
+            isSuccess={success === "refresh"}
+          />
       
       <h5 className="mb-4">User Management</h5>
       

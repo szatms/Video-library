@@ -5,6 +5,32 @@ const cardStyles = `
   .video-list-card.watched-card {
     background: #a8e6cf !important;
   }
+  
+  .video-list-card.hidden-card {
+    position: relative;
+  }
+  
+  .video-list-card.hidden-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(128, 128, 128, 0.7);
+    filter: blur(4px) grayscale(100%);
+    z-index: 1;
+    border-radius: 18px;
+  }
+  
+  .video-list-card.hidden-card .button-container {
+    position: relative;
+    z-index: 2;
+  }
+  
+  .video-list-card.hidden-card img {
+    filter: grayscale(100%);
+  }
 `;
 
 function ContentCard({ 
@@ -19,12 +45,13 @@ function ContentCard({
   children 
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
 
   return (
     <div>
       <style>{cardStyles}</style>
       <div 
-        className={`video-list-card d-flex gap-3 align-items-start justify-content-between mb-3 ${className} ${watched ? 'watched-card' : ''}`}
+        className={`video-list-card d-flex gap-3 align-items-start justify-content-between mb-3 ${className} ${watched ? 'watched-card' : ''} ${isHidden ? 'hidden-card' : ''}`}
         onClick={onClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -50,7 +77,7 @@ function ContentCard({
         </div>
 
         {onToggleWatched && (
-          <div className="d-flex flex-column align-items-center gap-2">
+          <div className="d-flex flex-column align-items-center gap-2 button-container">
             <button
               type="button"
               className={`btn btn-sm ${watched ? "btn-success" : "btn-outline-success"}`}
@@ -61,6 +88,17 @@ function ContentCard({
               title={watched ? "Mark as unwatched" : "Mark as watched"}
             >
               {watched ? "✓" : "○"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsHidden(!isHidden);
+              }}
+              title={isHidden ? "Show content" : "Hide content"}
+            >
+              {isHidden ? "👁️" : "👁️‍🗨️"}
             </button>
             {children}
           </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../services/api";
 import ContentCard from "../misc/ContentCard";
+import SimpleLoadingModal from "../misc/SimpleLoadingModal";
 
 const SORT_OPTIONS = [
   { value: "ADDED_AT", label: "Date added" },
@@ -88,6 +89,7 @@ function VideoList() {
   const [sortBy, setSortBy] = useState("ADDED_AT");
   const [direction, setDirection] = useState("DESC");
   const [unwatchedFirst, setUnwatchedFirst] = useState(true);
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
   const sortMenuRef = useRef(null);
 
   const activeSortLabel = useMemo(
@@ -157,6 +159,7 @@ function VideoList() {
     }
 
     try {
+      setShowLoadingModal(true);
       const res = await api.post("/uservideos", { url: input });
       const createdVideo = toSummaryItem(res.data);
       setVideos((current) => [createdVideo, ...current]);
@@ -165,6 +168,8 @@ function VideoList() {
     } catch (err) {
       console.error("VIDEO ADD ERROR:", err);
       setError("Could not add the video.");
+    } finally {
+      setShowLoadingModal(false);
     }
   };
 
@@ -390,6 +395,9 @@ function VideoList() {
             </div>
           </div>
         )}
+
+        {/* LOADING MODAL */}
+        <SimpleLoadingModal show={showLoadingModal} />
       </div>
     </div>
   );

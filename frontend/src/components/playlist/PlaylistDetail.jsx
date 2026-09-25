@@ -5,6 +5,7 @@ import NotesEditor from "../notes/NotesEditor";
 import ContentCard from "../misc/ContentCard";
 import { fetchUserSettings } from "../../services/settings";
 import { formatDate } from "../../utils/sharedUtils";
+import LoadingModal from "../misc/LoadingModal";
 
 function PlaylistDetail() {
   const { playlistId } = useParams();
@@ -24,6 +25,10 @@ function PlaylistDetail() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState('idle'); // idle, refreshing, success
   const [selectedNoteId, setSelectedNoteId] = useState(null);
+  const [showRefreshModal, setShowRefreshModal] = useState(false);
+  const [refreshLogs, setRefreshLogs] = useState([]);
+  const [refreshProgress, setRefreshProgress] = useState(0);
+  const [maxRefreshProgress, setMaxRefreshProgress] = useState(100);
 
   useEffect(() => {
     const fetchPlaylistDetails = async () => {
@@ -216,9 +221,42 @@ function PlaylistDetail() {
     if (refreshing) return;
     
     try {
+      setShowRefreshModal(true);
+      setRefreshLogs([]);
+      setRefreshProgress(0);
+      setMaxRefreshProgress(100);
       setRefreshing(true);
       setRefreshStatus('refreshing');
+      
+      // Simulate progress based on known refresh structure
+      setRefreshLogs(prev => [...prev, "Starting playlist refresh"]);
+      
+      // Simulate progress updates with more realistic timing
+      let currentProgress = 0;
+      const progressInterval = setInterval(() => {
+        currentProgress += Math.floor(Math.random() * 3) + 1; // Random increment between 1-3
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          clearInterval(progressInterval);
+        }
+        setRefreshProgress(currentProgress);
+        
+        // Add log messages at key progress points
+        if (currentProgress === 30) {
+          setRefreshLogs(prev => [...prev, "Starting video refresh process"]);
+        } else if (currentProgress === 70) {
+          setRefreshLogs(prev => [...prev, "Video refresh completed. Updating playlist items"]);
+        } else if (currentProgress === 90) {
+          setRefreshLogs(prev => [...prev, "Playlist items updated"]);
+        }
+      }, 150);
+      
       await api.post(`/userplaylists/${playlistId}/refresh`);
+      
+      clearInterval(progressInterval);
+      setRefreshProgress(100);
+      setRefreshLogs(prev => [...prev, "Playlist refresh completed"]);
+      
       // Refresh the playlist data after refresh
       const playlistResponse = await api.get(`/userplaylists/${playlistId}`);
       setPlaylist(playlistResponse.data);
@@ -227,9 +265,13 @@ function PlaylistDetail() {
       const videosResponse = await api.get(`/uservideos/playlist/${playlistId}`);
       setVideos(videosResponse.data);
       
-      // Show success
-      setRefreshStatus('success');
-      setTimeout(() => setRefreshStatus('idle'), 2000);
+      // Show success after a short delay
+      setTimeout(() => {
+        setRefreshStatus('success');
+        setTimeout(() => {
+          setShowRefreshModal(false);
+        }, 2000);
+      }, 200);
     } catch (err) {
       console.error("Error refreshing playlist:", err);
       setError("Failed to refresh playlist");
@@ -364,6 +406,16 @@ function PlaylistDetail() {
              'Refresh playlist'}
           </button>
         </div>
+
+        <LoadingModal 
+          show={showRefreshModal}
+          title="Refreshing Playlist"
+          message="Please wait while we update your playlist..."
+          logs={refreshLogs}
+          progress={refreshProgress}
+          maxProgress={maxRefreshProgress}
+          isSuccess={refreshStatus === 'success'}
+        />
 
         {/* PLAYLIST HEADER */}
         <div className="d-flex gap-3 mb-4">
