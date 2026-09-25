@@ -88,6 +88,8 @@ function Codices() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState("ADDED_AT");
   const [direction, setDirection] = useState("DESC");
@@ -177,19 +179,34 @@ function Codices() {
 
   const handleDelete = async (event, id) => {
     event.stopPropagation();
+    // Show confirmation modal instead of deleting immediately
+    setDeleteTargetId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    
     setError("");
-    setDeletingId(id);
+    setDeletingId(deleteTargetId);
 
     try {
-      await api.delete(`/codices/delete/${id}`);
-      setCodices((current) => current.filter((codex) => codex.id !== id));
+      await api.delete(`/codices/delete/${deleteTargetId}`);
+      setCodices((current) => current.filter((codex) => codex.id !== deleteTargetId));
       await loadCodices();
     } catch (err) {
       console.error("CODICES DELETE ERROR:", err);
       setError("Could not delete the codex.");
     } finally {
       setDeletingId(null);
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteTargetId(null);
   };
 
   const loadContent = useCallback(async () => {
@@ -405,7 +422,31 @@ function Codices() {
         ))}
       </div>
 
-      
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteModal && (
+        <div 
+          className="modal show d-block" 
+          tabIndex="-1" 
+          onClick={cancelDelete}
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
+        >
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Delete</h5>
+                <button type="button" className="btn-close" onClick={cancelDelete}></button>
+              </div>
+              <div className="modal-body">
+                Are you sure you want to delete this codex? This action cannot be undone.
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={cancelDelete}>Cancel</button>
+                <button type="button" className="btn btn-danger" onClick={confirmDelete}>Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CREATE MODAL */}
       {showCreateModal && (

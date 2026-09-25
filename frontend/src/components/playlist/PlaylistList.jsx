@@ -68,6 +68,8 @@ function PlaylistList() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState("ADDED_AT");
   const [direction, setDirection] = useState("DESC");
@@ -150,19 +152,34 @@ function PlaylistList() {
 
   const handleDelete = async (event, id) => {
     event.stopPropagation();
+    // Show confirmation modal instead of deleting immediately
+    setDeleteTargetId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    
     setError("");
-    setDeletingId(id);
+    setDeletingId(deleteTargetId);
 
     try {
-      await api.delete(`/userplaylists/${id}`);
-      setPlaylists((current) => current.filter((playlist) => playlist.id !== id));
+      await api.delete(`/userplaylists/${deleteTargetId}`);
+      setPlaylists((current) => current.filter((playlist) => playlist.id !== deleteTargetId));
       await loadPlaylists();
     } catch (err) {
       console.error("PLAYLIST DELETE ERROR:", err);
       setError("Could not delete the playlist.");
     } finally {
       setDeletingId(null);
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteTargetId(null);
   };
 
   const toggleWatchedStatus = async (userPlaylistId, currentWatchedStatus) => {
@@ -184,6 +201,22 @@ function PlaylistList() {
 
   return (
     <div className="p-3">
+      <style>{`
+        .modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          z-index: 1050;
+        }
+        
+        .modal {
+          display: block;
+          z-index: 1055;
+        }
+      `}</style>
       {/* BACK BUTTON */}
       {location.pathname.startsWith("/home/playlists") && (
         <div className="mb-3">
@@ -266,42 +299,68 @@ function PlaylistList() {
         </div>
       )}
 
-      {/* LIST */}
-      <div className="video-list" style={{ overflowY: 'auto', flexGrow: 1 }}>
-        {!loading && playlists.length === 0 && (
-          <div className="text-muted">No playlists yet.</div>
-        )}
+        {/* LIST */}
+        <div className="video-list" style={{ overflowY: 'auto', flexGrow: 1 }}>
+          {!loading && playlists.length === 0 && (
+            <div className="text-muted">No playlists yet.</div>
+          )}
 
-        {playlists.map((p) => (
-          <ContentCard
-            key={p.id}
-            title={p.playlist.title}
-            subtitle={p.playlist.channelTitle}
-            thumbnailUrl={p.playlist.thumbnailUrl}
-            onClick={() => navigate(`/home/playlists/${p.id}`)}
-            onToggleWatched={() => toggleWatchedStatus(p.id, p.watched)}
-            watched={p.watched}
-            additionalInfo={[
-              p.watched ? "Watched" : "Unwatched",
-              formatAddedAt(p.addedAt) && `Added: ${formatAddedAt(p.addedAt)}`,
-              formatVideoCount(p.playlist.videoCount) && formatVideoCount(p.playlist.videoCount)
-            ].filter(Boolean)}
-          >
-            <button
-              type="button"
-              className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleDelete(event, p.id);
-              }}
-              disabled={deletingId === p.id}
-              aria-label={`Delete ${p.playlist.title}`}
+          {playlists.map((p) => (
+            <ContentCard
+              key={p.id}
+              title={p.playlist.title}
+              subtitle={p.playlist.channelTitle}
+              thumbnailUrl={p.playlist.thumbnailUrl}
+              onClick={() => navigate(`/home/playlists/${p.id}`)}
+              onToggleWatched={() => toggleWatchedStatus(p.id, p.watched)}
+              watched={p.watched}
+              additionalInfo={[
+                p.watched ? "Watched" : "Unwatched",
+                formatAddedAt(p.addedAt) && `Added: ${formatAddedAt(p.addedAt)}`,
+                formatVideoCount(p.playlist.videoCount) && formatVideoCount(p.playlist.videoCount)
+              ].filter(Boolean)}
             >
-              {deletingId === p.id ? "..." : "X"}
-            </button>
-          </ContentCard>
-        ))}
-      </div>
+              <button
+                type="button"
+                className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleDelete(event, p.id);
+                }}
+                disabled={deletingId === p.id}
+                aria-label={`Delete ${p.playlist.title}`}
+              >
+                {deletingId === p.id ? "..." : "X"}
+              </button>
+            </ContentCard>
+          ))}
+        </div>
+
+        {/* DELETE CONFIRMATION MODAL */}
+        {showDeleteModal && (
+          <div 
+            className="modal show d-block" 
+            tabIndex="-1" 
+            onClick={cancelDelete}
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
+          >
+            <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Confirm Delete</h5>
+                  <button type="button" className="btn-close" onClick={cancelDelete}></button>
+                </div>
+                <div className="modal-body">
+                  Are you sure you want to delete this playlist? This action cannot be undone.
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={cancelDelete}>Cancel</button>
+                  <button type="button" className="btn btn-danger" onClick={confirmDelete}>Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }

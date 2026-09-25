@@ -4,6 +4,7 @@ import io.github.szatms.videolibrary.integration.youtube.PythonPlaylistDataProvi
 import io.github.szatms.videolibrary.integration.youtube.PythonVideoDataProvider;
 import io.github.szatms.videolibrary.integration.youtube.factory.PlaylistFactory;
 import io.github.szatms.videolibrary.integration.youtube.factory.VideoFactory;
+import io.github.szatms.videolibrary.model.playlistitemmodel.PlaylistItem;
 import io.github.szatms.videolibrary.model.playlistmodel.Playlist;
 import io.github.szatms.videolibrary.model.playlistmodel.PlaylistRepository;
 import io.github.szatms.videolibrary.model.userplaylistmodel.UserPlaylistRepository;
@@ -38,7 +39,24 @@ public class RefreshService {
     private final AppSettingsService appSettingsService;
     private final AppSettingsRepository appSettingsRepository;
     private final UserPlaylistRepository userPlaylistRepository;
-    
+
+    public void manuallyRefreshAllVideosAndPlaylists(){
+        logger.info("Starting refresh of videos and playlists");
+
+        // Get update period from settings
+        AppSettings appSettings = appSettingsService.getAppSettings();
+
+        // Check if we should refresh based on contentUpdated timestamp and updatePeriod
+        processVideosInBatches();
+
+        processPlaylistsInBatches();
+
+        updateContentUpdatedTimestamp(appSettings);
+
+
+        logger.info("Refresh process completed");
+    }
+
     @Scheduled(cron = "${refresh.cron.expression:0 0 0 * * ?}")
     public void refreshAllVideosAndPlaylists() {
         logger.info("Starting refresh of videos and playlists");
@@ -166,10 +184,64 @@ public class RefreshService {
             updatedPlaylist.setId(playlist.getId());
             playlistRepository.save(updatedPlaylist);
             
-            logger.info("Successfully updated playlist: {}", youtubeId);
+            // Update videos in the playlist
+            logger.info("Updating videos in playlist: {}", youtubeId);
+            updatePlaylistVideos(playlistId, updatedPlaylist.getItems());
+            
+            logger.info("Successfully updated playlist and its videos: {}", youtubeId);
         } catch (Exception e) {
             logger.error("Error updating playlist {}: {}", playlistId, e.getMessage(), e);
             throw new RuntimeException("Failed to update playlist: " + playlistId, e);
+        }
+    }
+    
+    private void updatePlaylistVideos(String playlistId, List<PlaylistItem> playlistItems) {
+        if (playlistItems == null || playlistItems.isEmpty()) {
+            logger.info("No playlist items found for playlist: {}", playlistId);
+            return;
+        }
+        
+        logger.info("Updating {} videos in playlist: {}", playlistItems.size(), playlistId);
+        
+        AtomicInteger totalUpdates = new AtomicInteger(0);
+        AtomicInteger successfulUpdates = new AtomicInteger(0);
+        Set<String> erroredVideoIds = ConcurrentHashMap.newKeySet();
+        
+        for (PlaylistItem item : playlistItems) {
+            try {
+                totalUpdates.incrementAndGet();
+                String videoId = item.getVideoId();
+                
+                if (videoId != null) {
+                    logger.debug("Refreshing video with ID: {}", videoId);
+                    var response = pythonVideoDataProvider.load(videoId);
+                    Video updatedVideo = videoFactory.fromItem(response);
+                    // Preserve existing video ID to overwrite the existing video
+                    Video existingVideo = videoRepository.findByYoutubeId(videoId)
+                            .orElse(null);
+                    if (existingVideo != null) {
+                        updatedVideo.setVideoId(existingVideo.getVideoId());
+                    }
+                    videoRepository.save(updatedVideo);
+                    successfulUpdates.incrementAndGet();
+                    logger.debug("Successfully refreshed video: {}", videoId);
+                } else {
+                    logger.warn("Playlist item in playlist {} has no video ID", playlistId);
+                    erroredVideoIds.add(item.getId());
+                }
+            } catch (Exception e) {
+                logger.error("Error refreshing video {} in playlist {}: {}", item.getVideoId(), playlistId, e.getMessage(), e);
+                // For the playlist update, we don't want to fail the entire process,
+                // so we continue with other videos but log the error
+                erroredVideoIds.add(item.getId());
+            }
+        }
+        
+        logger.info("Video update for playlist {} completed. Total: {}, Successful: {}, Errors: {}", 
+                   playlistId, totalUpdates.get(), successfulUpdates.get(), erroredVideoIds.size());
+        
+        if (!erroredVideoIds.isEmpty()) {
+            logger.warn("Errored playlist items in playlist {}: {}", playlistId, erroredVideoIds);
         }
     }
     

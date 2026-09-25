@@ -71,7 +71,7 @@ public class AdminController {
     @PostMapping("/refresh")
     @PreAuthorize("hasRole('OWNER') or hasRole('ADMIN')")
     public ResponseEntity<String> refreshAllVideosAndPlaylists() {
-        refreshService.refreshAllVideosAndPlaylists();
+        refreshService.manuallyRefreshAllVideosAndPlaylists();
         return ResponseEntity.ok("Refresh initiated successfully");
     }
 }

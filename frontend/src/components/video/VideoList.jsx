@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../services/api";
+import ContentCard from "../misc/ContentCard";
 
 const SORT_OPTIONS = [
   { value: "ADDED_AT", label: "Date added" },
@@ -81,6 +82,8 @@ function VideoList() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState("ADDED_AT");
   const [direction, setDirection] = useState("DESC");
@@ -167,19 +170,34 @@ function VideoList() {
 
   const handleDelete = async (event, id) => {
     event.stopPropagation();
+    // Show confirmation modal instead of deleting immediately
+    setDeleteTargetId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    
     setError("");
-    setDeletingId(id);
+    setDeletingId(deleteTargetId);
 
     try {
-      await api.delete(`/uservideos/${id}`);
-      setVideos((current) => current.filter((video) => video.id !== id));
+      await api.delete(`/uservideos/${deleteTargetId}`);
+      setVideos((current) => current.filter((video) => video.id !== deleteTargetId));
       await loadVideos();
     } catch (err) {
       console.error("VIDEO DELETE ERROR:", err);
       setError("Could not delete the video.");
     } finally {
       setDeletingId(null);
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteTargetId(null);
   };
 
   const toggleWatchedStatus = async (userVideoId, currentWatchedStatus) => {
@@ -202,6 +220,22 @@ function VideoList() {
   return (
     <div className="d-flex h-100 overflow-hidden">
       <div className="flex-grow-1 d-flex flex-column min-w-0 p-4">
+        <style>{`
+          .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1050;
+          }
+          
+          .modal {
+            display: block;
+            z-index: 1055;
+          }
+        `}</style>
         {/* BACK BUTTON */}
         {location.pathname.startsWith("/home/videos") && !location.pathname.includes("/videos/") && (
           <div className="mb-4">
@@ -300,63 +334,62 @@ function VideoList() {
           )}
 
           {videos.map((v) => (
-            <div
+            <ContentCard
               key={v.id}
-              className="video-list-card d-flex gap-4 align-items-start justify-content-between mb-4"
+              title={v.video.title}
+              subtitle={v.video.channelTitle}
+              thumbnailUrl={v.video.thumbnailUrl}
               onClick={() => navigate(`/home/videos/${v.id}`)}
+              onToggleWatched={() => toggleWatchedStatus(v.id, v.watched)}
+              watched={v.watched}
+              additionalInfo={[
+                formatAddedAt(v.addedAt) && `Added: ${formatAddedAt(v.addedAt)}`,
+                formatDuration(v.video.durationSeconds) && formatDuration(v.video.durationSeconds),
+                `${(v.video.viewCount ?? 0).toLocaleString()} views`,
+                v.watched ? "Watched" : "Unwatched"
+              ].filter(Boolean)}
             >
-              <div className="d-flex gap-4 align-items-start min-w-0 flex-grow-1">
-                <img
-                  src={v.video.thumbnailUrl}
-                  alt={v.video.title}
-                  className="video-list-thumbnail"
-                />
-
-                  <div className="min-w-0">
-                    <div className="fw-semibold">{v.video.title}</div>
-                    {v.video.channelTitle && (
-                      <div className="video-list-channel text-truncate">{v.video.channelTitle}</div>
-                    )}
-                    <div className="d-flex flex-wrap gap-3 mt-2 text-muted small">
-                      {formatAddedAt(v.addedAt) && (
-                        <span>Added: {formatAddedAt(v.addedAt)}</span>
-                      )}
-                      {formatDuration(v.video.durationSeconds) && (
-                        <span>{formatDuration(v.video.durationSeconds)}</span>
-                      )}
-                      <span>{(v.video.viewCount ?? 0).toLocaleString()} views</span>
-                      <span className="ms-2 text-muted small">
-                        {v.watched ? "Watched" : "Unwatched"}
-                      </span>
-                    </div>
-                  </div>
-              </div>
-
-              <div className="d-flex flex-column align-items-center gap-3">
-                <button
-                  type="button"
-                  className={`btn btn-sm ${v.watched ? "btn-success" : "btn-outline-success"}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    toggleWatchedStatus(v.id, v.watched);
-                  }}
-                  title={v.watched ? "Mark as unwatched" : "Mark as watched"}
-                >
-                  {v.watched ? "✓" : "○"}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
-                  onClick={(event) => handleDelete(event, v.id)}
-                  disabled={deletingId === v.id}
-                  aria-label={`Delete ${v.video.title}`}
-                >
-                  {deletingId === v.id ? "..." : "X"}
-                </button>
-              </div>
-            </div>
+              <button
+                type="button"
+                className="btn btn-danger text-white fw-bold px-3 py-1 flex-shrink-0 align-self-center"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleDelete(event, v.id);
+                }}
+                disabled={deletingId === v.id}
+                aria-label={`Delete ${v.video.title}`}
+              >
+                {deletingId === v.id ? "..." : "X"}
+              </button>
+            </ContentCard>
           ))}
         </div>
+
+        {/* DELETE CONFIRMATION MODAL */}
+        {showDeleteModal && (
+          <div 
+            className="modal show d-block" 
+            tabIndex="-1" 
+            onClick={cancelDelete}
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
+          >
+            <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Confirm Delete</h5>
+                  <button type="button" className="btn-close" onClick={cancelDelete}></button>
+                </div>
+                <div className="modal-body">
+                  Are you sure you want to delete this video? This action cannot be undone.
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={cancelDelete}>Cancel</button>
+                  <button type="button" className="btn btn-danger" onClick={confirmDelete}>Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -21,6 +21,9 @@ function PlaylistDetail() {
   const [notes, setNotes] = useState([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [userSettings, setUserSettings] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshStatus, setRefreshStatus] = useState('idle'); // idle, refreshing, success
+  const [selectedNoteId, setSelectedNoteId] = useState(null);
 
   useEffect(() => {
     const fetchPlaylistDetails = async () => {
@@ -49,12 +52,15 @@ function PlaylistDetail() {
             const noteResponse = await api.get(`/notes?parentIds=${playlistId}`);
             if (noteResponse.data && noteResponse.data.length > 0) {
               setNoteDraft(noteResponse.data[0].content || "");
+              setSelectedNoteId(noteResponse.data[0].id);
             } else {
               setNoteDraft("");
+              setSelectedNoteId(null);
             }
           } catch (noteErr) {
             console.error("Error fetching notes:", noteErr);
             setNoteDraft("");
+            setSelectedNoteId(null);
           }
         }
       } catch (err) {
@@ -170,7 +176,7 @@ function PlaylistDetail() {
       // Save playlist notes using the correct API endpoint
       // First, create or update the note in the note system
       const noteData = {
-        title: `${playlist?.playlist?.title || 'Playlist'} Notes`,
+        title: `Playlist Notes`,
         content: noteDraft,
         parentIds: [playlistId],
         isPdf: false
@@ -180,8 +186,8 @@ function PlaylistDetail() {
       const existingNotes = await api.get(`/notes?parentIds=${playlistId}`);
       
       if (existingNotes.data && existingNotes.data.length > 0) {
-        // Update existing note
-        const noteId = existingNotes.data[0].id;
+        // Update existing note - use the selected note if available, otherwise first one
+        const noteId = selectedNoteId || existingNotes.data[0].id;
         await api.put(`/notes/${noteId}`, noteData);
       } else {
         // Create new note
@@ -206,11 +212,46 @@ function PlaylistDetail() {
     }
   };
 
+  const refreshPlaylist = async () => {
+    if (refreshing) return;
+    
+    try {
+      setRefreshing(true);
+      setRefreshStatus('refreshing');
+      await api.post(`/userplaylists/${playlistId}/refresh`);
+      // Refresh the playlist data after refresh
+      const playlistResponse = await api.get(`/userplaylists/${playlistId}`);
+      setPlaylist(playlistResponse.data);
+      
+      // Fetch updated videos
+      const videosResponse = await api.get(`/uservideos/playlist/${playlistId}`);
+      setVideos(videosResponse.data);
+      
+      // Show success
+      setRefreshStatus('success');
+      setTimeout(() => setRefreshStatus('idle'), 2000);
+    } catch (err) {
+      console.error("Error refreshing playlist:", err);
+      setError("Failed to refresh playlist");
+      setRefreshStatus('idle');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const fetchNotes = async () => {
     try {
       setLoadingNotes(true);
       const notesRes = await api.get(`/notes?parentIds=${playlistId}`);
       setNotes(notesRes.data);
+      
+      // Initialize noteDraft with the content of the first note, if it exists
+      if (notesRes.data.length > 0 && notesRes.data[0]) {
+        setNoteDraft(notesRes.data[0].content ?? "");
+        setSelectedNoteId(notesRes.data[0].id);
+      } else {
+        setSelectedNoteId(null);
+      }
     } catch (err) {
       console.error("Error fetching notes:", err);
       setSaveError("Failed to load notes");
@@ -306,12 +347,21 @@ function PlaylistDetail() {
     <div className="d-flex h-100 overflow-hidden">
       <div className="flex-grow-1 d-flex flex-column min-w-0">
         {/* BACK BUTTON */}
-        <div className="mb-3">
+        <div className="mb-3 d-flex align-items-center gap-2">
           <button 
             className="btn btn-outline-primary" 
             onClick={() => navigate(-1)}
           >
             ← Back
+          </button>
+          <button 
+            className={`btn ${refreshStatus === 'success' ? 'btn-success' : 'btn-outline-secondary'} refresh-button`}
+            onClick={refreshPlaylist}
+            disabled={refreshing}
+          >
+            {refreshStatus === 'refreshing' ? 'Refreshing...' : 
+             refreshStatus === 'success' ? 'Refreshed!' : 
+             'Refresh playlist'}
           </button>
         </div>
 
@@ -406,6 +456,8 @@ function PlaylistDetail() {
           parentType="playlist"
           notes={notes}
           onFetchNotes={fetchNotes}
+          selectedNoteId={selectedNoteId}
+          onNoteSelect={(noteId) => setSelectedNoteId(noteId)}
         />
       </div>
     </div>

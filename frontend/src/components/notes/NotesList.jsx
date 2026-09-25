@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from "../../services/api";
 import { fetchUserSettings } from "../../services/settings";
+import ContentCard from "../misc/ContentCard";
 
 const NotesList = () => {
   const [notes, setNotes] = useState([]);
@@ -72,17 +73,15 @@ const NotesList = () => {
         <div className="row">
           {notes.map((note) => (
             <div key={note.id} className="col-md-4 mb-3">
-              <div 
-                className="card h-100 pointer"
+              <ContentCard
+                title={note.title}
                 onClick={() => handleNoteClick(note.id)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="card-body">
-                  <h5 className="card-title">{note.title}</h5>
-                  <p className="card-text">Added: {formatDate(note.addedAt)}</p>
-                  <p className="card-text">Updated: {formatDate(note.updatedAt)}</p>
-                </div>
-              </div>
+                additionalInfo={[
+                  `Added: ${formatDate(note.addedAt)}`,
+                  `Updated: ${formatDate(note.updatedAt)}`
+                ]}
+                className="pointer"
+              />
             </div>
           ))}
         </div>

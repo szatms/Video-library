@@ -22,6 +22,8 @@ const NotesPage = () => {
   const [detachParentIds, setDetachParentIds] = useState([]);
   const [filteredVideos, setFilteredVideos] = useState([]);
   const [filteredPlaylists, setFilteredPlaylists] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,6 +66,7 @@ const NotesPage = () => {
     setIsAddingToNote(false);
     setShowParentSelector(true);
     setParentIds([]); // Reset parent IDs
+    setNoteTitle(''); // Reset title for new note
     loadParentData(); // Load videos and playlists when modal opens
   };
 
@@ -180,6 +183,37 @@ const NotesPage = () => {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    
+    try {
+      await api.delete(`/notes/delete/${deleteTargetId}`);
+      // Remove the note from the list
+      setNotes(prev => prev.filter(note => note.id !== deleteTargetId));
+      // If we're deleting the currently selected note, clear the selection
+      if (selectedNote && selectedNote.id === deleteTargetId) {
+        setSelectedNote(null);
+        setNoteTitle('');
+        setNoteContent('');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteTargetId(null);
+  };
+
+  const handleDeleteClick = (noteId) => {
+    setDeleteTargetId(noteId);
+    setShowDeleteModal(true);
   };
 
   const handleParentSelect = (parentId) => {
@@ -452,15 +486,6 @@ const NotesPage = () => {
                   >
                     Download
                   </button>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteNote(note.id);
-                    }}
-                  >
-                    Delete
-                  </button>
                 </div>
               </div>
             ))}
@@ -490,7 +515,15 @@ const NotesPage = () => {
                 Save
               </button>
             </div>
-
+            <div className="col">
+              <button
+                className="btn btn-danger w-100"
+                onClick={() => handleDeleteClick(selectedNote.id)}
+                disabled={!selectedNote}
+              >
+                Delete
+              </button>
+            </div>
           </div>
           <div className="row g-2">
             <div className="col">
@@ -554,49 +587,63 @@ const NotesPage = () => {
                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowParentSelector(false)}></button>
               </div>
 
-              <div className="modal-body">
-                <p>Select videos or playlists to be parents of this note:</p>
-
-                {/* Tabs */}
-                <ul className="nav nav-tabs mb-3">
-                  <li className="nav-item">
-                    <button
-                      className={`nav-link ${activeTab === 'videos' ? 'active' : ''}`}
-                      onClick={() => setActiveTab('videos')}
-                    >
-                      Videos
-                    </button>
-                  </li>
-                  <li className="nav-item">
-                    <button
-                      className={`nav-link ${activeTab === 'inPlaylistVideos' ? 'active' : ''}`}
-                      onClick={() => setActiveTab('inPlaylistVideos')}
-                    >
-                      In-playlist Videos
-                    </button>
-                  </li>
-                  <li className="nav-item">
-                    <button
-                      className={`nav-link ${activeTab === 'playlists' ? 'active' : ''}`}
-                      onClick={() => setActiveTab('playlists')}
-                    >
-                      Playlists
-                    </button>
-                  </li>
-                </ul>
-
-                {/* Loading indicator */}
-                {loadingParents && (
-                  <div className="text-center my-3">
-                    <div className="spinner-border" role="status">
-                      <span className="visually-hidden">Loading...</span>
+                <div className="modal-body">
+                  <p>Select videos or playlists to be parents of this note:</p>
+                  
+                  {!isAddingToNote && (
+                    <div className="mb-3">
+                      <label htmlFor="noteTitle" className="form-label">Note Title</label>
+                      <input
+                        type="text"
+                        className="form-control bg-dark text-white border-secondary"
+                        id="noteTitle"
+                        value={noteTitle}
+                        onChange={(e) => setNoteTitle(e.target.value)}
+                        placeholder="Enter note title"
+                      />
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Parent items list */}
-                {!loadingParents && (
-                  <div className="row">
+                  {/* Tabs */}
+                  <ul className="nav nav-tabs mb-3">
+                    <li className="nav-item">
+                      <button
+                        className={`nav-link ${activeTab === 'videos' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('videos')}
+                      >
+                        Videos
+                      </button>
+                    </li>
+                    <li className="nav-item">
+                      <button
+                        className={`nav-link ${activeTab === 'inPlaylistVideos' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('inPlaylistVideos')}
+                      >
+                        In-playlist Videos
+                      </button>
+                    </li>
+                    <li className="nav-item">
+                      <button
+                        className={`nav-link ${activeTab === 'playlists' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('playlists')}
+                      >
+                        Playlists
+                      </button>
+                    </li>
+                  </ul>
+
+                  {/* Loading indicator */}
+                  {loadingParents && (
+                    <div className="text-center my-3">
+                      <div className="spinner-border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Parent items list */}
+                  {!loadingParents && (
+                    <div className="row">
                     {activeTab === 'videos' ? (
                       <div className="col-12">
                         {videos.length > 0 ? (
@@ -1019,6 +1066,31 @@ const NotesPage = () => {
       )}
 
 
+        {/* Delete confirmation modal */}
+        {showDeleteModal && (
+          <div 
+            className="modal show d-block" 
+            tabIndex="-1" 
+            onClick={cancelDelete}
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
+          >
+            <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content bg-dark text-white border-secondary">
+                <div className="modal-header bg-dark border-secondary">
+                  <h5 className="modal-title">Confirm Delete</h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={cancelDelete}></button>
+                </div>
+                <div className="modal-body">
+                  Are you sure you want to delete this note? This action cannot be undone.
+                </div>
+                <div className="modal-footer bg-dark border-secondary">
+                  <button type="button" className="btn btn-secondary" onClick={cancelDelete}>Cancel</button>
+                  <button type="button" className="btn btn-danger" onClick={confirmDelete}>Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 };

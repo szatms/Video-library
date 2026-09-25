@@ -1,8 +1,11 @@
 package io.github.szatms.videolibrary.controller;
 
+import io.github.szatms.videolibrary.mapper.NoteMapper;
 import io.github.szatms.videolibrary.mapper.PlaylistMapper;
 import io.github.szatms.videolibrary.mapper.UserPlaylistMapper;
+import io.github.szatms.videolibrary.model.notemodel.Note;
 import io.github.szatms.videolibrary.model.notemodel.dto.AddToParentDTO;
+import io.github.szatms.videolibrary.model.notemodel.dto.NoteResponseDTO;
 import io.github.szatms.videolibrary.model.playlistmodel.Playlist;
 import io.github.szatms.videolibrary.model.playlistmodel.dto.PlaylistResponseDTO;
 import io.github.szatms.videolibrary.model.userplaylistmodel.SortDirection;
@@ -35,6 +38,7 @@ public class UserPlaylistController {
     private final LinkUtils linkUtils;
     private final NoteService noteService;
     private final RefreshService refreshService;
+    private final NoteMapper noteMapper;
 
     @GetMapping
     public List<UserPlaylistResponseDTO> getPlaylists(
@@ -81,6 +85,22 @@ public class UserPlaylistController {
         Playlist playlist = playlistService.getById(userPlaylist.getPlaylistId());
         PlaylistResponseDTO playlistResponseDTO = playlistMapper.toResponseDTO(playlist);
         return userPlaylistMapper.toResponseDTO(userPlaylist, playlistResponseDTO);
+    }
+
+    @GetMapping("/{id}/notes")
+    public List<NoteResponseDTO> getNotes(
+            @PathVariable String id,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        String userId = userDetails.getUser().getUserId();
+
+        // Verify that the playlist belongs to the authenticated user
+        userPlaylistService.getPlaylist(userId, id);
+
+        List<Note> notes = noteService.getNotesForParent(userId, id);
+
+        return notes.stream()
+                .map(noteMapper::toResponseDTO)
+                .toList();
     }
 
     @PostMapping("/{id}/notes/add")

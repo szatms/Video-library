@@ -178,11 +178,13 @@ function NotesEditor({
   notes, // Pass in notes for display
   onAddNotes,
   onRemoveNotes,
-  onFetchNotes
+  onFetchNotes,
+  selectedNoteId, // Add this prop to track which note is currently selected
+  onNoteSelect // Add this prop to handle note selection
 }) {
   const [showAddNoteModal, setShowAddNoteModal] = useState(false);
   const [showRemoveNoteModal, setShowRemoveNoteModal] = useState(false);
-  const [activeTab, setActiveTab] = useState("add-existing");
+  const [activeTab, setActiveTab] = useState("add-new");
   const [existingNotes, setExistingNotes] = useState([]);
   const [loadingExistingNotes, setLoadingExistingNotes] = useState(false);
   const [selectedNoteIds, setSelectedNoteIds] = useState(new Set());
@@ -435,11 +437,14 @@ function NotesEditor({
           notes.map((note) => (
             <div
               key={note.id}
-              className="card bg-dark text-white border-secondary"
+              className={`card ${selectedNoteId === note.id ? 'bg-primary text-white' : 'bg-dark text-white border-secondary'}`}
               style={{ cursor: "pointer" }}
               onClick={() => {
                 onNoteChange(note.content ?? "");
                 onTogglePreview(false);
+                if (onNoteSelect) {
+                  onNoteSelect(note.id);
+                }
                 }}
               >
                 <div className="card-body p-2">

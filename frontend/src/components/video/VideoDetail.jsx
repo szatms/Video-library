@@ -43,6 +43,7 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
   const [saveError, setSaveError] = useState("");
   const [loading, setLoading] = useState(true);
   const [userSettings, setUserSettings] = useState(null);
+  const [selectedNoteId, setSelectedNoteId] = useState(null);
   const playerRef = useRef(null);
 
   useEffect(() => {
@@ -71,6 +72,9 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
         // Initialize noteDraft with the content of the first note, if it exists
         if (notesRes.data.length > 0 && notesRes.data[0]) {
           setNoteDraft(notesRes.data[0].content ?? "");
+          setSelectedNoteId(notesRes.data[0].id);
+        } else {
+          setSelectedNoteId(null);
         }
         // Set timestamps from the video data
         setTimestamps(res.data.timestamps ?? []);
@@ -109,11 +113,15 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
 
     try {
       // First, we need to determine which note to update
-      // If there are existing notes, update the first one
+      // If we have a selected note, use that
+      // If there are existing notes but no selected note, update the first one
       // If no notes exist, we need to create one first
       let noteIdToSave = null;
       
-      if (notes.length > 0) {
+      if (selectedNoteId) {
+        // Update the currently selected note
+        noteIdToSave = selectedNoteId;
+      } else if (notes.length > 0) {
         // Update the first existing note
         noteIdToSave = notes[0].id;
       } else {
@@ -133,12 +141,8 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
       if (noteIdToSave) {
         // Update the note content
         try {
-          // Make sure we have a valid note to update
-          if (!notes[0]) {
-            throw new Error("No note found to update");
-          }
           const updateResponse = await api.put(`/notes/${noteIdToSave}`, {
-            title: notes[0].title,
+            title: notes.find(n => n.id === noteIdToSave)?.title || "Untitled Note",
             content: noteDraft
           });
         } catch (updateError) {
@@ -185,6 +189,9 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
       // Initialize noteDraft with the content of the first note, if it exists
       if (notesRes.data.length > 0 && notesRes.data[0]) {
         setNoteDraft(notesRes.data[0].content ?? "");
+        setSelectedNoteId(notesRes.data[0].id);
+      } else {
+        setSelectedNoteId(null);
       }
     } catch (err) {
       console.error("Error fetching notes:", err);
@@ -533,6 +540,8 @@ function VideoDetail({ userVideoId, currentUser, onBack }) {
           currentUser={currentUser}
           notes={notes}
           onFetchNotes={fetchNotes}
+          selectedNoteId={selectedNoteId}
+          onNoteSelect={(noteId) => setSelectedNoteId(noteId)}
         />
       </div>
     </div>

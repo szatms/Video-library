@@ -2,8 +2,8 @@ import { useState } from "react";
 
 // CSS styles for watched cards
 const cardStyles = `
-  .watched-card {
-    background-color: #d4edda !important;
+  .video-list-card.watched-card {
+    background: #a8e6cf !important;
   }
 `;
 
