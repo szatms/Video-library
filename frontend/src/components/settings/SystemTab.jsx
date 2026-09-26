@@ -5,6 +5,7 @@ import LoadingModal from "../misc/LoadingModal";
 function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
   const [systemSettings, setSystemSettings] = useState({
     deletionPeriod: null,
+    updatePeriod: null,
     dateFormat: "EU",
     timeFormat: "H_12",
     maxUsers: null
@@ -120,6 +121,7 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
       
       const response = await api.post(`/admin/settings/app/update`, {
         deletionPeriod: systemSettings.deletionPeriod,
+        updatePeriod: systemSettings.updatePeriod,
         dateFormat: systemSettings.dateFormat,
         timeFormat: systemSettings.timeFormat,
         maxUsers: systemSettings.maxUsers
@@ -363,6 +365,18 @@ function SystemTab({ currentUser, setCurrentUser, loadingUser, userError }) {
       )}
       
       <form onSubmit={handleSaveSettings}>
+        <div className="mb-3">
+          <label htmlFor="updatePeriod" className="form-label">Update Period (days)</label>
+          <input
+            type="number"
+            id="updatePeriod"
+            className="form-control"
+            value={systemSettings.updatePeriod || ""}
+            onChange={(e) => handleChange("updatePeriod", parseInt(e.target.value) || null)}
+            min="0"
+          />
+        </div>
+        
         <div className="mb-3">
           <label htmlFor="deletionPeriod" className="form-label">Deletion Period (days)</label>
           <input

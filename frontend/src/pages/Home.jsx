@@ -234,7 +234,7 @@ function Home() {
             style={{ cursor: "pointer" }}
             onClick={handleOpenTrash}
           >
-            {!sidebarCollapsed ? "Recycling Bin" : (
+            {!sidebarCollapsed ? <span className="fw-bold">Recycling Bin</span> : (
               <button className="btn btn-light" style={{ width: "40px", height: "40px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <i className="bi bi-trash"></i>
               </button>
