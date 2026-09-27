@@ -279,7 +279,12 @@ public class RefreshService {
                         logger.debug("Refreshing playlist with YouTube ID: {}", youtubeId);
                         var response = pythonPlaylistDataProvider.load(youtubeId);
                         Playlist updatedPlaylist = playlistFactory.fromItem(response);
-                        updatedPlaylist.setYoutubeId(playlist.getYoutubeId());
+                        // Preserve existing playlist ID to update instead of creating new
+                        Playlist existingPlaylist = playlistRepository.findByYoutubeId(youtubeId)
+                                .orElse(null);
+                        if (existingPlaylist != null) {
+                            updatedPlaylist.setId(existingPlaylist.getId());
+                        }
                         playlistRepository.save(updatedPlaylist);
                         successfulUpdates.incrementAndGet();
                         logger.debug("Successfully refreshed playlist: {}", youtubeId);
