@@ -12,6 +12,8 @@ A Spring Boot + React web-app to organize and monitor YouTube playlists and vide
 
 No separate MongoDB, Java, Node.js, Python, or Maven installation is required.
 
+For help with Docker, refer to the manuals at: https://docs.docker.com/engine/install/
+
 ## Setup Instructions
 
 ### 1. Clone the repository
@@ -52,7 +54,7 @@ Then copy the generated value into JWT_SECRET.
 
 You need a YouTube Data API v3 key from Google Cloud. Enable the YouTube Data API v3 for your project, create an API key, and paste it into `YOUTUBE_DATA_API_KEY`.
 
-You can get started on `https://console.cloud.google.com/`.
+You can get started on https://console.cloud.google.com/
 
 Example .env:
 
@@ -87,3 +89,13 @@ http://<MACHINE_IP>:5173
 For example:
 
 http://192.168.1.50:5173
+
+## Updating the app
+
+When a new version is released, you can update your instance by navigating to your install directory and running:
+
+```bash
+docker compose down
+git pull
+docker compose up --build -d
+```
