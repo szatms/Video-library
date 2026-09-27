@@ -39,19 +39,20 @@ function ContentCard({
   thumbnailUrl, 
   onClick, 
   onToggleWatched, 
+  onToggleHidden,
   watched = false,
+  hidden = false,
   additionalInfo = [],
   className = "",
   children 
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
 
   return (
     <div>
       <style>{cardStyles}</style>
       <div 
-        className={`video-list-card d-flex gap-3 align-items-start justify-content-between mb-3 ${className} ${watched ? 'watched-card' : ''} ${isHidden ? 'hidden-card' : ''}`}
+        className={`video-list-card d-flex gap-3 align-items-start justify-content-between mb-3 ${className} ${watched ? 'watched-card' : ''} ${hidden ? 'hidden-card' : ''}`}
         onClick={onClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -94,11 +95,11 @@ function ContentCard({
               className="btn btn-sm btn-outline-secondary"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsHidden(!isHidden);
+                onToggleHidden && onToggleHidden();
               }}
-              title={isHidden ? "Show content" : "Hide content"}
+              title={hidden ? "Show content" : "Hide content"}
             >
-              {isHidden ? "👁️" : "👁️‍🗨️"}
+              {hidden ? "👁️" : "👁️‍🗨️"}
             </button>
             {children}
           </div>

@@ -10,6 +10,7 @@ public class UserVideoSummaryResponseDTO {
     private String id;
 
     private boolean watched;
+    private boolean hidden;
     private int noteCount;
     private Boolean inPlaylist;
 

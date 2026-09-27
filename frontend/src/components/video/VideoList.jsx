@@ -222,6 +222,23 @@ function VideoList() {
     }
   };
 
+  const toggleHiddenStatus = async (userVideoId, currentHiddenStatus) => {
+    try {
+      const res = await api.patch(`/uservideos/${userVideoId}`, {
+        hidden: !currentHiddenStatus
+      });
+
+      // Update the local videos array to reflect the change
+      setVideos(prevVideos => 
+        prevVideos.map(video => 
+          video.id === userVideoId ? { ...video, hidden: !currentHiddenStatus } : video
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling hidden status:", err);
+    }
+  };
+
   return (
     <div className="d-flex h-100 overflow-hidden">
       <div className="flex-grow-1 d-flex flex-column min-w-0 p-4">
@@ -346,7 +363,9 @@ function VideoList() {
               thumbnailUrl={v.video.thumbnailUrl}
               onClick={() => navigate(`/home/videos/${v.id}`)}
               onToggleWatched={() => toggleWatchedStatus(v.id, v.watched)}
+              onToggleHidden={() => toggleHiddenStatus(v.id, v.hidden)}
               watched={v.watched}
+              hidden={v.hidden}
               additionalInfo={[
                 formatAddedAt(v.addedAt) && `Added: ${formatAddedAt(v.addedAt)}`,
                 formatDuration(v.video.durationSeconds) && formatDuration(v.video.durationSeconds),

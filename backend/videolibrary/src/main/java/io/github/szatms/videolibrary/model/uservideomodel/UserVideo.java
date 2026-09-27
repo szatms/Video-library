@@ -24,6 +24,7 @@ public class UserVideo {
 
     private List<String> noteIds;
     private boolean watched;
+    private boolean hidden;
     private List<Timestamp> timestamps;
     private boolean inPlaylist;
 

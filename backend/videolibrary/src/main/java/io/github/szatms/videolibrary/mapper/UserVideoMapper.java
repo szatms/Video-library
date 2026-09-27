@@ -36,6 +36,7 @@ public class UserVideoMapper {
         dto.setWatched(userVideo.isWatched());
         dto.setNoteCount(userVideo.getNoteIds() != null ? userVideo.getNoteIds().size() : 0);
         dto.setInPlaylist(userVideo.isInPlaylist());
+        dto.setHidden(userVideo.isHidden());
         dto.setAddedAt(userVideo.getAddedAt());
         dto.setVideo(videoDto);
         return dto;
@@ -54,5 +55,6 @@ public class UserVideoMapper {
         }
 
         entity.setWatched(dto.isWatched());
+        entity.setHidden(dto.isHidden());
     }
 }

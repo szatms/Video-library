@@ -181,6 +181,23 @@ function PlaylistDetail() {
     }
   };
 
+  const toggleHiddenStatus = async (userVideoId, currentHiddenStatus) => {
+    try {
+      const res = await api.patch(`/uservideos/${userVideoId}`, {
+        hidden: !currentHiddenStatus
+      });
+
+      // Update the local videos array to reflect the change
+      setVideos(prevVideos => 
+        prevVideos.map(video => 
+          video.id === userVideoId ? { ...video, hidden: !currentHiddenStatus } : video
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling hidden status:", err);
+    }
+  };
+
   const handleNoteChange = (newNote) => {
     setNoteDraft(newNote);
     setIsDirty(true);
@@ -573,7 +590,9 @@ const refreshPlaylist = async () => {
                   thumbnailUrl={video.video.thumbnailUrl}
                   onClick={() => handleVideoClick(video.id)}
                   onToggleWatched={() => toggleWatchedStatus(video.id, video.watched)}
+                  onToggleHidden={() => toggleHiddenStatus(video.id, video.hidden)}
                   watched={video.watched}
+                  hidden={video.hidden}
                   additionalInfo={[
                     video.video.durationSeconds && formatDuration(video.video.durationSeconds),
                     video.addedAt && `Added: ${formatAddedAt(video.addedAt)}`

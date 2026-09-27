@@ -8,5 +8,6 @@ import java.util.List;
 @Data
 public class UserVideoUpdateDTO {
     private boolean watched;
+    private boolean hidden;
     private List<Timestamp> timestamps;
 }
