@@ -95,7 +95,5 @@ http://192.168.1.50:5173
 When a new version is released, you can update your instance by navigating to your install directory and running:
 
 ```bash
-docker compose down
-git pull
-docker compose up --build -d
+docker compose down && git pull && docker compose up --build -d
 ```
