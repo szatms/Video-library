@@ -10,6 +10,7 @@ import LoadingModal from "../misc/LoadingModal";
 function PlaylistDetail() {
   const { playlistId } = useParams();
   const navigate = useNavigate();
+  const urlParams = new URLSearchParams(window.location.search);
   const [playlist, setPlaylist] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +29,20 @@ function PlaylistDetail() {
   const [showRefreshModal, setShowRefreshModal] = useState(false);
   const [refreshLogs, setRefreshLogs] = useState([]);
   const [refreshProgress, setRefreshProgress] = useState(0);
+  const [sortBy, setSortBy] = useState(urlParams.get('sort') || 'ORIGINAL');
+  const [direction, setDirection] = useState(urlParams.get('dir') || 'ASC');
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [maxRefreshProgress, setMaxRefreshProgress] = useState(100);
+  const sortMenuRef = useRef(null);
+
+  // Update URL with sorting parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('sort', sortBy);
+    params.set('dir', direction);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [sortBy, direction]);
 
   useEffect(() => {
     const fetchPlaylistDetails = async () => {
@@ -45,7 +59,12 @@ function PlaylistDetail() {
         setPlaylist(playlistResponse.data);
         
         // Fetch videos for this specific playlist using the new endpoint
-        const videosResponse = await api.get(`/uservideos/playlist/${playlistId}`);
+        const videosResponse = await api.get(`/uservideos/playlist/${playlistId}`, {
+          params: {
+            sortBy: sortBy,
+            direction: direction
+          }
+        });
         setVideos(videosResponse.data);
 
         // Extract note from the playlist data or fetch from notes endpoint
@@ -217,53 +236,58 @@ function PlaylistDetail() {
     }
   };
 
-  const refreshPlaylist = async () => {
-    if (refreshing) return;
-    
-    try {
-      setShowRefreshModal(true);
-      setRefreshLogs([]);
-      setRefreshProgress(0);
-      setMaxRefreshProgress(100);
-      setRefreshing(true);
-      setRefreshStatus('refreshing');
+const refreshPlaylist = async () => {
+      if (refreshing) return;
       
-      // Simulate progress based on known refresh structure
-      setRefreshLogs(prev => [...prev, "Starting playlist refresh"]);
-      
-      // Simulate progress updates with more realistic timing
-      let currentProgress = 0;
-      const progressInterval = setInterval(() => {
-        currentProgress += Math.floor(Math.random() * 3) + 1; // Random increment between 1-3
-        if (currentProgress >= 100) {
-          currentProgress = 100;
-          clearInterval(progressInterval);
-        }
-        setRefreshProgress(currentProgress);
+      try {
+        setShowRefreshModal(true);
+        setRefreshLogs([]);
+        setRefreshProgress(0);
+        setMaxRefreshProgress(100);
+        setRefreshing(true);
+        setRefreshStatus('refreshing');
         
-        // Add log messages at key progress points
-        if (currentProgress === 30) {
-          setRefreshLogs(prev => [...prev, "Starting video refresh process"]);
-        } else if (currentProgress === 70) {
-          setRefreshLogs(prev => [...prev, "Video refresh completed. Updating playlist items"]);
-        } else if (currentProgress === 90) {
-          setRefreshLogs(prev => [...prev, "Playlist items updated"]);
-        }
-      }, 150);
-      
-      await api.post(`/userplaylists/${playlistId}/refresh`);
-      
-      clearInterval(progressInterval);
-      setRefreshProgress(100);
-      setRefreshLogs(prev => [...prev, "Playlist refresh completed"]);
-      
-      // Refresh the playlist data after refresh
-      const playlistResponse = await api.get(`/userplaylists/${playlistId}`);
-      setPlaylist(playlistResponse.data);
-      
-      // Fetch updated videos
-      const videosResponse = await api.get(`/uservideos/playlist/${playlistId}`);
-      setVideos(videosResponse.data);
+        // Simulate progress based on known refresh structure
+        setRefreshLogs(prev => [...prev, "Starting playlist refresh"]);
+        
+        // Simulate progress updates with more realistic timing
+        let currentProgress = 0;
+        const progressInterval = setInterval(() => {
+          currentProgress += Math.floor(Math.random() * 3) + 1; // Random increment between 1-3
+          if (currentProgress >= 100) {
+            currentProgress = 100;
+            clearInterval(progressInterval);
+          }
+          setRefreshProgress(currentProgress);
+          
+          // Add log messages at key progress points
+          if (currentProgress === 30) {
+            setRefreshLogs(prev => [...prev, "Starting video refresh process"]);
+          } else if (currentProgress === 70) {
+            setRefreshLogs(prev => [...prev, "Video refresh completed. Updating playlist items"]);
+          } else if (currentProgress === 90) {
+            setRefreshLogs(prev => [...prev, "Playlist items updated"]);
+          }
+        }, 150);
+        
+        await api.post(`/userplaylists/${playlistId}/refresh`);
+        
+        clearInterval(progressInterval);
+        setRefreshProgress(100);
+        setRefreshLogs(prev => [...prev, "Playlist refresh completed"]);
+        
+        // Refresh the playlist data after refresh
+        const playlistResponse = await api.get(`/userplaylists/${playlistId}`);
+        setPlaylist(playlistResponse.data);
+        
+        // Fetch updated videos with current sorting
+        const videosResponse = await api.get(`/uservideos/playlist/${playlistId}`, {
+          params: {
+            sortBy: sortBy,
+            direction: direction
+          }
+        });
+        setVideos(videosResponse.data);
       
       // Show success after a short delay
       setTimeout(() => {
@@ -373,6 +397,27 @@ function PlaylistDetail() {
     setupResize();
   }, []);
 
+  // Reload videos when sort options change
+  useEffect(() => {
+    const fetchVideosWithSorting = async () => {
+      try {
+        const videosResponse = await api.get(`/uservideos/playlist/${playlistId}`, {
+          params: {
+            sortBy: sortBy,
+            direction: direction
+          }
+        });
+        setVideos(videosResponse.data);
+      } catch (err) {
+        console.error("Error fetching videos with sorting:", err);
+      }
+    };
+
+    if (playlistId) {
+      fetchVideosWithSorting();
+    }
+  }, [sortBy, direction, playlistId]);
+
   if (loading) {
     return <div className="p-3">Loading playlist...</div>;
   }
@@ -434,8 +479,88 @@ function PlaylistDetail() {
           </div>
         </div>
 
+        {/* SORTING CONTROLS */}
+        <div className="video-toolbar mb-3">
+          <div className="video-sort-panel" ref={sortMenuRef}>
+            <button
+              type="button"
+              className="btn btn-outline-light video-sort-trigger"
+              onClick={() => setSortMenuOpen((current) => !current)}
+              aria-expanded={sortMenuOpen}
+            >
+              <span className="text-start">
+                <span className="video-sort-trigger-label">Sort</span>
+                <span className="video-sort-trigger-value">
+                  {sortBy === "ORIGINAL" ? "Original" : sortBy === "VIEWS" ? "Views" : sortBy === "TITLE" ? "Title" : "Likes"}
+                </span>
+              </span>
+              <i className={`bi ${sortMenuOpen ? "bi-chevron-up" : "bi-chevron-down"}`} aria-hidden="true" />
+            </button>
+
+            {sortMenuOpen && (
+              <div className="video-sort-menu">
+                <div className="video-sort-options" role="listbox" aria-label="Sort videos by">
+                  <button
+                    type="button"
+                    className={`video-sort-option ${sortBy === "ORIGINAL" ? "active" : ""}`}
+                    onClick={() => {
+                      setSortBy("ORIGINAL");
+                      setSortMenuOpen(false);
+                    }}
+                  >
+                    Original Order
+                  </button>
+                  <button
+                    type="button"
+                    className={`video-sort-option ${sortBy === "VIEWS" ? "active" : ""}`}
+                    onClick={() => {
+                      setSortBy("VIEWS");
+                      setSortMenuOpen(false);
+                    }}
+                  >
+                    Views
+                  </button>
+                  <button
+                    type="button"
+                    className={`video-sort-option ${sortBy === "TITLE" ? "active" : ""}`}
+                    onClick={() => {
+                      setSortBy("TITLE");
+                      setSortMenuOpen(false);
+                    }}
+                  >
+                    Title
+                  </button>
+                  <button
+                    type="button"
+                    className={`video-sort-option ${sortBy === "LIKES" ? "active" : ""}`}
+                    onClick={() => {
+                      setSortBy("LIKES");
+                      setSortMenuOpen(false);
+                    }}
+                  >
+                    Likes
+                  </button>
+                </div>
+
+                {sortBy !== "ORIGINAL" && (
+                  <div className="video-sort-controls">
+                    <button
+                      type="button"
+                      className="btn btn-outline-light video-sort-direction"
+                      onClick={() => setDirection((current) => (current === "DESC" ? "ASC" : "DESC"))}
+                      aria-label={direction === "DESC" ? "Descending order" : "Ascending order"}
+                    >
+                      <i className={`bi ${direction === "DESC" ? "bi-arrow-down" : "bi-arrow-up"}`} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* VIDEO LIST */}
-        <div className="flex-grow-1 overflow-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
+        <div className="flex-grow-1 overflow-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
           {videos.length === 0 ? (
             <div className="text-muted">No videos in this playlist.</div>
           ) : (
@@ -459,6 +584,95 @@ function PlaylistDetail() {
           )}
         </div>
       </div>
+
+      <style>{`
+        .video-toolbar {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .video-sort-panel {
+          position: relative;
+          min-width: 120px;
+        }
+
+        .video-sort-trigger {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px;
+          font-size: 0.875rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .video-sort-trigger-label {
+          font-weight: 500;
+          margin-right: 4px;
+        }
+
+        .video-sort-trigger-value {
+          flex-shrink: 0;
+        }
+
+        .video-sort-menu {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          z-index: 1000;
+          background: #343a40;
+          border: 1px solid #495057;
+          border-radius: 0.375rem;
+          min-width: 160px;
+          box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+          margin-top: 0.25rem;
+        }
+
+        .video-sort-options {
+          padding: 0.25rem 0;
+        }
+
+        .video-sort-option {
+          display: block;
+          width: 100%;
+          padding: 0.25rem 1rem;
+          text-align: left;
+          background: none;
+          border: none;
+          color: #fff;
+          font-size: 0.875rem;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .video-sort-option:hover,
+        .video-sort-option.active {
+          background-color: #0d6efd;
+        }
+
+        .video-sort-controls {
+          display: flex;
+          border-top: 1px solid #495057;
+        }
+
+        .video-sort-direction {
+          flex: 1;
+          padding: 0.25rem 0.5rem;
+          border: none;
+          background: none;
+          color: #fff;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .video-sort-direction:hover {
+          background-color: #495057;
+        }
+      `}</style>
 
       {/* NOTE EDITOR PANEL */}
       <div

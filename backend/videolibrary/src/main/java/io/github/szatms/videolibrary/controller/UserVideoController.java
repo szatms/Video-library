@@ -157,7 +157,9 @@ public class UserVideoController {
     @GetMapping("/playlist/{id}")
     public List<UserVideoSummaryResponseDTO> getAllForPlaylist(
             @PathVariable String id,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "ORIGINAL") String sortBy,
+            @RequestParam(defaultValue = "ASC") String direction
     ) {
         String userId = userDetails.getUser().getUserId();
         List<UserPlaylistItem> items = userPlaylistItemService.getAllByPlaylistId(id);
@@ -169,6 +171,14 @@ public class UserVideoController {
             UserVideo userVideo = userVideoService.getVideo(userId, userVideoId);
             Video video = videoService.getById(userVideo.getVideoId());
             results.add(userVideoMapper.toSummaryResponseDTO(userVideo, videoMapper.toSummaryDTO(video)));
+        }
+
+        // Sort the results based on the sortBy and direction parameters
+        if (!sortBy.equalsIgnoreCase("ORIGINAL")) {
+            results = userVideoService.getSortedVideosForPlaylist(results, sortBy, direction);
+        } else {
+            // For original order, we need to sort by the position in the playlist
+            results = userVideoService.getOriginalOrderVideosForPlaylist(results, items);
         }
 
         return results;

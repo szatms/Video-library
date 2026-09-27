@@ -11,5 +11,6 @@ public class VideoSummaryDTO {
     private String channelId;
     private String channelTitle;
     private long viewCount;
+    private long likeCount;
     private Long durationSeconds;
 }

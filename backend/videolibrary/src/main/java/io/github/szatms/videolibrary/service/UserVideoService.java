@@ -11,6 +11,7 @@ import io.github.szatms.videolibrary.model.uservideomodel.UserVideoRepository;
 import io.github.szatms.videolibrary.model.uservideomodel.UserVideoSortBy;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoSummaryResponseDTO;
 import io.github.szatms.videolibrary.model.uservideomodel.dto.UserVideoUpdateDTO;
+import io.github.szatms.videolibrary.model.userplaylistitemmodel.UserPlaylistItem;
 import io.github.szatms.videolibrary.model.videomodel.Video;
 import io.github.szatms.videolibrary.model.videomodel.VideoRepository;
 import lombok.RequiredArgsConstructor;
@@ -213,6 +214,40 @@ public class UserVideoService {
             return 0L;
         }
         return video.getStats().getViewCount();
+    }
+
+public List<UserVideoSummaryResponseDTO> getSortedVideosForPlaylist(
+            List<UserVideoSummaryResponseDTO> videos, String sortBy, String direction) {
+        Comparator<UserVideoSummaryResponseDTO> comparator = switch (sortBy.toUpperCase()) {
+            case "VIEWS" -> Comparator.comparing(dto -> dto.getVideo().getViewCount());
+            case "TITLE" -> Comparator.comparing(dto -> dto.getVideo().getTitle());
+            case "LIKES" -> Comparator.comparing(dto -> dto.getVideo().getLikeCount());
+            default -> throw new IllegalArgumentException("Invalid sort by value: " + sortBy);
+        };
+
+        if (direction.toUpperCase().equals("DESC")) {
+            comparator = comparator.reversed();
+        }
+
+        return videos.stream()
+                .sorted(comparator)
+                .toList();
+    }
+
+    public List<UserVideoSummaryResponseDTO> getOriginalOrderVideosForPlaylist(
+            List<UserVideoSummaryResponseDTO> videos, List<UserPlaylistItem> playlistItems) {
+        // Create a map of userVideoId to position for original ordering
+        Map<String, Integer> positionMap = new HashMap<>();
+        for (UserPlaylistItem item : playlistItems) {
+            if (item.getPlaylistItem() != null) {
+                positionMap.put(item.getUserVideoId(), item.getPlaylistItem().getPosition());
+            }
+        }
+        
+        // Sort videos based on the original position
+        return videos.stream()
+                .sorted(Comparator.comparing(dto -> positionMap.getOrDefault(dto.getId(), Integer.MAX_VALUE)))
+                .toList();
     }
 
     public List<UserVideoSummaryResponseDTO> getVideosForChannel(

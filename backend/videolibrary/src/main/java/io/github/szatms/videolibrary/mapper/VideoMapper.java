@@ -40,6 +40,7 @@ public class VideoMapper {
         dto.setChannelId(video.getChannelId());
         dto.setChannelTitle(video.getChannelTitle());
         dto.setViewCount(video.getStats() != null ? video.getStats().getViewCount() : 0L);
+        dto.setLikeCount(video.getStats() != null ? video.getStats().getLikeCount() : 0L);
         dto.setDurationSeconds(video.getDurationSeconds());
 
         return dto;
