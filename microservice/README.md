@@ -1,25 +1,18 @@
 # YouTube Data Harvester API
 
+## Credits
+
+A massive thank you to **Dr. habil. László Szathmáry** from the **University of Debrecen** for providing the original codebase that this microservice was built from.
+
+GitHub page: https://github.com/jabbalaci
+
 ## Summary
 
 This is a lightweight microservice designed to quickly extract metadata from YouTube videos, channels, and playlists. The service combines yt-dlp for video metadata extraction with the YouTube Data API v3 for channel and playlist information, providing a fast and efficient way to gather YouTube data programmatically.
 
 ## API Endpoints
 
-### 1. Video Metadata Extraction
-- **Endpoint**: `GET /ytdlp/video/shorter`
-- **Purpose**: Extracts metadata from YouTube videos using yt-dlp
-- **Parameters**: 
-  - `url` (query parameter): The YouTube video URL
-- **Response**: Raw video metadata including title, description, duration, etc.
-- **Test Command**:
-```bash
-curl -X 'GET' \
-  'http://127.0.0.1:8000/ytdlp/video/shorter?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ' \
-  -H 'accept: application/json'
-```
-
-### 2. Channel Metadata Extraction
+### 1. Channel Metadata Extraction
 - **Endpoint**: `GET /youtube/channel`
 - **Purpose**: Extracts metadata from YouTube channels using YouTube Data API v3
 - **Parameters**: 
@@ -32,7 +25,7 @@ curl -X 'GET' \
   -H 'accept: application/json'
 ```
 
-### 3. Playlist Items Extraction (Short Format)
+### 2. Playlist Items Extraction (Short Format)
 - **Endpoint**: `GET /youtube/playlist/short`
 - **Purpose**: Extracts video URLs from YouTube playlists using YouTube Data API v3
 - **Parameters**: 
@@ -45,7 +38,7 @@ curl -X 'GET' \
   -H 'accept: application/json'
 ```
 
-### 4. Playlist Details Extraction
+### 3. Playlist Details Extraction
 - **Endpoint**: `GET /youtube/playlist/long`
 - **Purpose**: Extracts detailed information about a YouTube playlist
 - **Parameters**: 
@@ -58,16 +51,16 @@ curl -X 'GET' \
   -H 'accept: application/json'
 ```
 
-### 5. Combined Video Information
-- **Endpoint**: `GET /youtube/video/combined`
-- **Purpose**: Combines video information from both YouTube API and yt-dlp
+### 4. Video Metadata Extraction
+- **Endpoint**: `GET /youtube/video`
+- **Purpose**: Extracts metadata from YouTube videos using YouTube Data API v3
 - **Parameters**: 
-  - `url` (query parameter): YouTube video URL
-- **Response**: Combined video information
+  - `url` (query parameter): YouTube video URL or ID
+- **Response**: Video metadata including title, description, duration, view count, etc.
 - **Test Command**:
 ```bash
 curl -X 'GET' \
-  'http://127.0.0.1:8000/youtube/video/combined?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ' \
+  'http://127.0.0.1:8000/youtube/video?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ' \
   -H 'accept: application/json'
 ```
 
@@ -86,8 +79,8 @@ curl -X 'GET' \
 
 1. Ensure you have a YouTube Data API v3 key
 2. Set the environment variable: `YOUTUBE_DATA_API_KEY=your_api_key_here`
-3. Run the application: `./start.sh`
-4. The service will only accept connections from localhost
+3. Run the application: `./start.sh` (uses virtual environment and installs dependencies automatically)
+4. The service will be accessible at `http://localhost:8000` (or the configured port)
 
 ## Docker Deployment
 

@@ -15,47 +15,47 @@ YOUTUBE_API_KEY = settings.youtube_api_key
 
 app = FastAPI(title="YouTube Data Harvester", version="1.0.0")
 
-class VideoRequest(BaseModel):
-    video_url: str
+class videoRequest(BaseModel):
+    videoUrl: str
 
-class VideoMetadata(BaseModel):
+class videoMetadata(BaseModel):
     title: str
     description: str
     duration: int
-    upload_date: str
+    uploadDate: str
     channel: str
-    channel_url: str
-    view_count: int
-    like_count: int
-    thumbnail_url: str
-    video_url: str
+    channelUrl: str
+    viewCount: int
+    likeCount: int
+    thumbnailUrl: str
+    videoUrl: str
 
-class ChannelRequest(BaseModel):
-    channel_id: Optional[str] = None
-    channel_name: Optional[str] = None
-    channel_url: Optional[str] = None
+class channelRequest(BaseModel):
+    channelId: Optional[str] = None
+    channelName: Optional[str] = None
+    channelUrl: Optional[str] = None
 
-class ChannelMetadata(BaseModel):
+class channelMetadata(BaseModel):
     id: str
     title: str
     description: str
-    published_at: str
-    thumbnail_url: str
-    view_count: int
-    subscriber_count: int
-    video_count: int
-    channel_url: str
+    publishedAt: str
+    thumbnailUrl: str
+    viewCount: int
+    subscriberCount: int
+    videoCount: int
+    channelUrl: str
 
-class PlaylistItem(BaseModel):
-    video_url: str
+class playlistItem(BaseModel):
+    videoUrl: str
 
-class PlaylistResponse(BaseModel):
+class playlistResponse(BaseModel):
     kind: str
     etag: str
     items: list[str]
     pageInfo: dict
 
-def extract_playlist_id(url: str) -> str:
+def extractPlaylistId(url: str) -> str:
     """Extract playlist ID from a YouTube playlist URL"""
     if not url.startswith("https://"):
         return url
@@ -65,7 +65,7 @@ def extract_playlist_id(url: str) -> str:
         return result
     return None
 
-def extract_channel_id_from_handle(channel_handle: str) -> str:
+def extractChannelIdFromHandle(channelHandle: str) -> str:
     """Extract channel ID from a channel handle using YouTube Data API v3"""
     if not YOUTUBE_API_KEY:
         raise HTTPException(status_code=500, detail="YouTube Data API key not configured")
@@ -75,7 +75,7 @@ def extract_channel_id_from_handle(channel_handle: str) -> str:
         
         params = {
             'part': 'id',
-            'forHandle': channel_handle.lstrip('@'),
+            'forHandle': channelHandle.lstrip('@'),
             'key': YOUTUBE_API_KEY
         }
         
@@ -89,39 +89,39 @@ def extract_channel_id_from_handle(channel_handle: str) -> str:
         if not data.get('items') or len(data['items']) == 0:
             raise HTTPException(status_code=404, detail="Channel handle not found")
         
-        channel_id = data['items'][0]['id']
-        return channel_id
+        channelId = data['items'][0]['id']
+        return channelId
         
     except Exception as e:
-        logger.error(f"Error extracting channel ID from handle {channel_handle}: {str(e)}")
+        logger.error(f"Error extracting channel ID from handle {channelHandle}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to resolve channel handle to ID: {str(e)}")
 
-def get_channel_metadata(channel_identifier: str) -> ChannelMetadata:
+def getChannelMetadata(channelIdentifier: str) -> channelMetadata:
     """Extract channel metadata from YouTube using the Data API v3."""
     if not YOUTUBE_API_KEY:
         raise HTTPException(status_code=500, detail="YouTube Data API key not configured")
     
     try:
-        channel_id = None
-        if channel_identifier.startswith('@'):
-            channel_id = extract_channel_id_from_handle(channel_identifier)
-        elif '/channel/' in channel_identifier:
-            match = re.search(r'/channel/([^?&]+)', channel_identifier)
+        channelId = None
+        if channelIdentifier.startswith('@'):
+            channelId = extractChannelIdFromHandle(channelIdentifier)
+        elif '/channel/' in channelIdentifier:
+            match = re.search(r'/channel/([^?&]+)', channelIdentifier)
             if match:
-                channel_id = match.group(1)
+                channelId = match.group(1)
             else:
                 raise HTTPException(status_code=400, detail="Invalid channel URL format")
         else:
-            channel_id = channel_identifier
+            channelId = channelIdentifier
         
-        if not channel_id:
+        if not channelId:
             raise HTTPException(status_code=400, detail="Could not extract channel ID")
         
         url = "https://www.googleapis.com/youtube/v3/channels"
         
         params = {
             'part': 'snippet,statistics',
-            'id': channel_id,
+            'id': channelId,
             'key': YOUTUBE_API_KEY
         }
         
@@ -137,26 +137,26 @@ def get_channel_metadata(channel_identifier: str) -> ChannelMetadata:
         
         channel = data['items'][0]
         
-        metadata = ChannelMetadata(
+        metadata = channelMetadata(
             id=channel['id'],
             title=channel['snippet']['title'],
             description=channel['snippet']['description'],
-            published_at=channel['snippet']['publishedAt'],
-            thumbnail_url=channel['snippet']['thumbnails']['high']['url'],
-            view_count=channel['statistics'].get('viewCount', 0),
-            subscriber_count=channel['statistics'].get('subscriberCount', 0),
-            video_count=channel['statistics'].get('videoCount', 0),
-            channel_url=f"https://www.youtube.com/channel/{channel['id']}"
+            publishedAt=channel['snippet']['publishedAt'],
+            thumbnailUrl=channel['snippet']['thumbnails']['high']['url'],
+            viewCount=channel['statistics'].get('viewCount', 0),
+            subscriberCount=channel['statistics'].get('subscriberCount', 0),
+            videoCount=channel['statistics'].get('videoCount', 0),
+            channelUrl=f"https://www.youtube.com/channel/{channel['id']}"
         )
         
         logger.info(f"Successfully extracted metadata for channel: {metadata.title}")
         return metadata
         
     except Exception as e:
-        logger.error(f"Error extracting channel metadata for {channel_identifier}: {str(e)}")
+        logger.error(f"Error extracting channel metadata for {channelIdentifier}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to extract channel metadata: {str(e)}")
 
-def get_playlist_items(playlist_id: str) -> PlaylistResponse:
+def getPlaylistItems(playlistId: str) -> playlistResponse:
     """Extract video URLs from a YouTube playlist using the Data API v3"""
     if not YOUTUBE_API_KEY:
         raise HTTPException(status_code=500, detail="YouTube Data API key not configured")
@@ -166,7 +166,7 @@ def get_playlist_items(playlist_id: str) -> PlaylistResponse:
         
         params = {
             'part': 'snippet',
-            'playlistId': playlist_id,
+            'playlistId': playlistId,
             'key': YOUTUBE_API_KEY,
             'maxResults': 50
         }
@@ -185,34 +185,34 @@ def get_playlist_items(playlist_id: str) -> PlaylistResponse:
             logger.error(error_msg)
             raise HTTPException(status_code=500, detail=error_msg)
         
-        video_urls = []
+        videoUrls = []
         try:
             for item in data.get('items', []):
-                video_id = item['snippet']['resourceId']['videoId']
-                video_urls.append(f"https://www.youtube.com/watch?v={video_id}")
+                videoId = item['snippet']['resourceId']['videoId']
+                videoUrls.append(f"https://www.youtube.com/watch?v={videoId}")
         except KeyError as e:
             error_msg = f"Error parsing playlist data: Missing key {str(e)}"
             logger.error(error_msg)
             raise HTTPException(status_code=500, detail=error_msg)
         
-        playlist_response = PlaylistResponse(
+        playlistResponse = playlistResponse(
             kind="youtube#playlistItemListResponse",
             etag=data.get('etag', ''),
-            items=video_urls,
+            items=videoUrls,
             pageInfo={
-                'totalResults': data.get('pageInfo', {}).get('totalResults', len(video_urls)),
+                'totalResults': data.get('pageInfo', {}).get('totalResults', len(videoUrls)),
                 'resultsPerPage': data.get('pageInfo', {}).get('resultsPerPage', 50)
             }
         )
         
-        logger.info(f"Successfully extracted {len(video_urls)} videos from playlist: {playlist_id}")
-        return playlist_response
+        logger.info(f"Successfully extracted {len(videoUrls)} videos from playlist: {playlistId}")
+        return playlistResponse
         
     except Exception as e:
-        logger.error(f"Error extracting playlist items for {playlist_id}: {str(e)}")
+        logger.error(f"Error extracting playlist items for {playlistId}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to extract playlist items: {str(e)}")
 
-def get_playlist_details(playlist_id: str):
+def getPlaylistDetails(playlistId: str):
     """Extract detailed playlist information using the YouTube Data API v3"""
     if not YOUTUBE_API_KEY:
         raise HTTPException(status_code=500, detail="YouTube Data API key not configured")
@@ -222,7 +222,7 @@ def get_playlist_details(playlist_id: str):
         
         params = {
             'part': 'snippet,status,contentDetails,player,localizations',
-            'id': playlist_id,
+            'id': playlistId,
             'key': YOUTUBE_API_KEY
         }
         
@@ -238,7 +238,7 @@ def get_playlist_details(playlist_id: str):
         
         playlist = data['items'][0]
         
-        playlist_details = {
+        playlistDetails = {
             "kind": "youtube#playlist",
             "etag": data.get('etag', ''),
             "id": playlist['id'],
@@ -258,47 +258,47 @@ def get_playlist_details(playlist_id: str):
             "localizations": playlist['localizations'] if 'localizations' in playlist else {}
         }
         
-        logger.info(f"Successfully extracted detailed information for playlist: {playlist_id}")
-        return playlist_details
+        logger.info(f"Successfully extracted detailed information for playlist: {playlistId}")
+        return playlistDetails
         
     except Exception as e:
-        logger.error(f"Error extracting playlist details for {playlist_id}: {str(e)}")
+        logger.error(f"Error extracting playlist details for {playlistId}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to extract playlist details: {str(e)}")
 
 @app.get("/youtube/channel")
-async def get_channel_metadata_endpoint(url: str):
+async def getChannelMetadataEndpoint(url: str):
     """Get YouTube channel metadata using the YouTube Data API v3."""
     if not url:
         raise HTTPException(status_code=400, detail="Channel URL or identifier is required")
     
     try:
-        channel_id = None
+        channelId = None
         
         if '/channel/' in url:
             match = re.search(r'/channel/([^?&]+)', url)
             if match:
-                channel_id = match.group(1)
+                channelId = match.group(1)
             else:
                 raise HTTPException(status_code=400, detail="Invalid channel URL format")
         elif url.startswith('@'):
-            channel_id = extract_channel_id_from_handle(url)
+            channelId = extractChannelIdFromHandle(url)
         elif url.startswith('UC') and len(url) == 24:
-            channel_id = url
+            channelId = url
         else:
-            channel_id = url
+            channelId = url
         
-        if not channel_id:
+        if not channelId:
             raise HTTPException(status_code=400, detail="Could not extract channel ID")
         
-        api_url = "https://www.googleapis.com/youtube/v3/channels"
+        apiUrl = "https://www.googleapis.com/youtube/v3/channels"
         
         params = {
             'part': 'snippet,statistics',
-            'id': channel_id,
+            'id': channelId,
             'key': YOUTUBE_API_KEY
         }
         
-        response = requests.get(api_url, params=params)
+        response = requests.get(apiUrl, params=params)
         
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=f"API request failed: {response.text}")
@@ -308,12 +308,12 @@ async def get_channel_metadata_endpoint(url: str):
         if not data.get('items') or len(data['items']) == 0:
             raise HTTPException(status_code=404, detail="Channel not found")
         
-        channel_data = data['items'][0]
+        channelData = data['items'][0]
         
         result = {
             "kind": "youtube#channelListResponse",
             "etag": data.get('etag', ''),
-            "items": [channel_data]
+            "items": [channelData]
         }
         
         logger.info(f"Successfully extracted channel metadata: {result['items'][0]['snippet']['title']}")
@@ -324,39 +324,39 @@ async def get_channel_metadata_endpoint(url: str):
         raise HTTPException(status_code=500, detail=f"Failed to extract channel metadata: {str(e)}")
 
 @app.get("/youtube/playlist/short")
-async def get_playlist_items_endpoint(url: str):
+async def getPlaylistItemsEndpoint(url: str):
     """Get YouTube playlist items (video URLs) using the YouTube Data API v3."""
     if not url:
         raise HTTPException(status_code=400, detail="Playlist URL is required")
     
     try:
-        playlist_id = extract_playlist_id(url)
-        if not playlist_id:
+        playlistId = extractPlaylistId(url)
+        if not playlistId:
             raise HTTPException(status_code=400, detail="Invalid playlist URL")
             
-        playlist_response = get_playlist_items(playlist_id)
-        return playlist_response
+        playlistResponse = getPlaylistItems(playlistId)
+        return playlistResponse
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/youtube/playlist/long")
-async def get_playlist_details_endpoint(url: str):
+async def getPlaylistDetailsEndpoint(url: str):
     """Get detailed YouTube playlist information using the YouTube Data API v3."""
     if not url:
         raise HTTPException(status_code=400, detail="Playlist URL is required")
     
     try:
-        playlist_id = extract_playlist_id(url)
-        if not playlist_id:
+        playlistId = extractPlaylistId(url)
+        if not playlistId:
             raise HTTPException(status_code=400, detail="Invalid playlist URL")
             
-        playlist_details = get_playlist_details(playlist_id)
-        return playlist_details
+        playlistDetails = getPlaylistDetails(playlistId)
+        return playlistDetails
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/youtube/video")
-async def get_video_info_from_youtube_api(url: str):
+async def getVideoInfoFromYoutubeApi(url: str):
     """Get YouTube video information using the YouTube Data API v3."""
     if not url:
         raise HTTPException(status_code=400, detail="Video URL or ID is required")
@@ -365,31 +365,31 @@ async def get_video_info_from_youtube_api(url: str):
         raise HTTPException(status_code=500, detail="YouTube Data API key not configured")
     
     try:
-        video_id = None
+        videoId = None
         if url.startswith("http"):
             match = re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11}).*', url)
             if match:
-                video_id = match.group(1)
+                videoId = match.group(1)
             else:
                 raise HTTPException(status_code=400, detail="Invalid YouTube URL")
         else:
             if len(url) == 11 and re.match(r'^[0-9A-Za-z_-]+$', url):
-                video_id = url
+                videoId = url
             else:
                 raise HTTPException(status_code=400, detail="Invalid video ID format")
         
-        if not video_id:
+        if not videoId:
             raise HTTPException(status_code=400, detail="Could not extract video ID")
         
-        api_url = "https://www.googleapis.com/youtube/v3/videos"
+        apiUrl = "https://www.googleapis.com/youtube/v3/videos"
         
         params = {
             'part': 'snippet,statistics,contentDetails',
-            'id': video_id,
+            'id': videoId,
             'key': YOUTUBE_API_KEY
         }
         
-        response = requests.get(api_url, params=params)
+        response = requests.get(apiUrl, params=params)
         
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=f"API request failed: {response.text}")
