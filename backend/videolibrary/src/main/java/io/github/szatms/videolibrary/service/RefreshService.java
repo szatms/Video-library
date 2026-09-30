@@ -43,36 +43,23 @@ public class RefreshService implements CommandLineRunner {
 
     public void manuallyRefreshAllVideosAndPlaylists(){
         logger.info("Starting refresh of videos and playlists");
-
-        // Get update period from settings
         AppSettings appSettings = appSettingsService.getAppSettings();
-
-        // Check if we should refresh based on contentUpdated timestamp and updatePeriod
         processVideosInBatches();
-
         processPlaylistsInBatches();
-
         updateContentUpdatedTimestamp(appSettings);
-
-
         logger.info("Refresh process completed");
     }
 
     @Scheduled(cron = "${refresh.cron.expression:0 0 0 * * ?}")
     public void refreshAllVideosAndPlaylists() {
         logger.info("Starting refresh of videos and playlists");
-        
-        // Get update period from settings
+
         AppSettings appSettings = appSettingsService.getAppSettings();
-        
-        // Check if we should refresh based on contentUpdated timestamp and updatePeriod
+
         if (shouldRefresh(appSettings)) {
             logger.info("Performing full refresh based on update period settings");
-
             processVideosInBatches();
-            
             processPlaylistsInBatches();
-
             updateContentUpdatedTimestamp(appSettings);
         } else {
             logger.info("Skipping refresh - content was updated within the allowed period");

@@ -82,8 +82,4 @@ public class ChannelService {
 
         return channelRepository.findAllById(channelIds);
     }
-
-    public List<Channel> getByIds(Iterable<String> channelIds){return channelRepository.findAllById(channelIds);}
-
-    public void deleteById(String channelId){channelRepository.deleteById(channelId);}
 }

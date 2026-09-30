@@ -8,9 +8,6 @@ import java.time.Instant;
 
 @Component
 public class AppSettingsMapper {
-    //=========================
-    // DTO --> ENTITY
-    //=========================
     public void updateEntityFromDTO(AppSettings appSettings, AppSettingsDTO dto){
         appSettings.setDeletionPeriod(dto.getDeletionPeriod());
         appSettings.setUpdatePeriod(dto.getUpdatePeriod());

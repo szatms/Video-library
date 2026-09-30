@@ -28,7 +28,6 @@ public class UserPlaylistItemService {
     }
 
     public void deleteItems(List<String> ids){
-        //TODO finish function - done?
         List<PlaylistItem> playlistItemsToDelete = new ArrayList<>();
         List<UserPlaylistItem> userPlaylistItemsToDelete = new ArrayList<>();
         for (String id : ids) {

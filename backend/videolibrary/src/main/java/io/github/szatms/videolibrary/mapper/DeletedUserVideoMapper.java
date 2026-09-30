@@ -6,17 +6,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DeletedUserVideoMapper {
-    //=========================
-    // ENTITY --> DELETED ENTITY
-    //=========================
     public DeletedUserVideo toDeletedUserVideo(UserVideo userVideo) {
         DeletedUserVideo deletedUserVideo = new DeletedUserVideo();
         deletedUserVideo.setUserVideo(userVideo);
         return deletedUserVideo;
     }
 
-    //=========================
-    // DELETED ENTITY --> ENTITY
-    //=========================
     public UserVideo toUserVideo(DeletedUserVideo deletedUserVideo) {return deletedUserVideo.getUserVideo();}
 }

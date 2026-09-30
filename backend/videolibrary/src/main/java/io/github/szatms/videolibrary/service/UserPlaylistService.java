@@ -158,7 +158,6 @@ public class UserPlaylistService {
             .toList();
     }
 
-    //TODO: implement playlist deletion properly, make sure Playlists, PlaylistItems, UserPlaylistItems, UserVideos and Videos are also deleted
     public void deletePlaylist(String userId, String userPlaylistId) {
         if (userId == null || userId.isBlank()) {
             throw new IllegalArgumentException("Invalid userId");

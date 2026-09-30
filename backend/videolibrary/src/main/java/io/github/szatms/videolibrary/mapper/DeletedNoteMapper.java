@@ -6,17 +6,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DeletedNoteMapper {
-    //=========================
-    // ENTITY --> DELETED ENTITY
-    //=========================
     public DeletedNote toDeletedNote(Note note){
         DeletedNote deletedNote = new DeletedNote();
         deletedNote.setNote(note);
         return deletedNote;
     }
 
-    //=========================
-    // DELETED ENTITY --> ENTITY
-    //=========================
     public Note toNote(DeletedNote deletedNote){return deletedNote.getNote();}
 }

@@ -14,25 +14,16 @@ public class UserController {
 
     private final UserService userService;
 
-    //=========================
-    // CURRENT USER
-    //=========================
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> getCurrentUser() {
         return ResponseEntity.ok(userService.getCurrentUser());
     }
 
-    //=========================
-    // SELF UPDATE
-    //=========================
     @PutMapping("/me")
     public ResponseEntity<UserResponseDTO> updateSelf(@RequestBody UserSelfUpdateDTO dto) {
         return ResponseEntity.ok(userService.updateSelf(dto));
     }
 
-    //=========================
-    // SELF DELETE
-    //=========================
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteSelf() {
         userService.deleteSelf();

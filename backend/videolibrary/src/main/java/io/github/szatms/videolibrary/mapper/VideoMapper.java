@@ -7,9 +7,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class VideoMapper {
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
     public VideoResponseDTO toResponseDTO(Video video){
         VideoResponseDTO dto = new VideoResponseDTO();
 
@@ -27,9 +24,6 @@ public class VideoMapper {
         return dto;
     }
 
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
     public VideoSummaryDTO toSummaryDTO(Video video){
         VideoSummaryDTO dto = new VideoSummaryDTO();
 
@@ -44,17 +38,5 @@ public class VideoMapper {
         dto.setDurationSeconds(video.getDurationSeconds());
 
         return dto;
-    }
-
-    //=========================
-    // UPDATE DTO --> ENTITY
-    //=========================
-    public void updateEntityFromDTO(VideoResponseDTO dto, Video entity){
-        if (dto == null || entity == null)
-            return;
-
-        if (dto.getStats() != null)
-            entity.setStats(dto.getStats());
-
     }
 }

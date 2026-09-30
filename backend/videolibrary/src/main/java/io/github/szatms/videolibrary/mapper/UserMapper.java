@@ -12,10 +12,6 @@ import java.time.LocalDateTime;
 
 @Component
 public class UserMapper {
-
-    //=========================
-    // CREATE DTO --> ENTITY
-    //=========================
     public User fromCreateDTO(UserCreateDTO dto, String passwordHash){
         return User.builder()
                 .userId(null)
@@ -27,9 +23,6 @@ public class UserMapper {
                 .build();
     }
 
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
     public UserResponseDTO toResponseDTO(User user){
         UserResponseDTO dto = new UserResponseDTO();
 
@@ -40,29 +33,5 @@ public class UserMapper {
         dto.setEnabled(user.getEnabled());
         dto.setCreatedAt(user.getCreatedAt());
         return dto;
-    }
-
-    //=========================
-    // ADMIN UPDATE DTO --> ENTITY
-    //=========================
-    public void updateEntityFromAdminDTO(UserAdminUpdateDTO dto, User user){
-        if(dto.getRole() != null)
-            user.setRole(dto.getRole());
-
-        if(dto.getEnabled() != null)
-            user.setEnabled(dto.getEnabled());
-    }
-
-    //=========================
-    // USER UPDATE DTO --> ENTITY
-    //=========================
-    public void updateEntityFromUserDTO(UserSelfUpdateDTO dto, User user){
-        if(dto.getUsername() != null)
-            user.setUsername(dto.getUsername());
-
-        if (dto.getPassword() != null)
-            user.setPasswordHash(dto.getPassword());
-
-
     }
 }

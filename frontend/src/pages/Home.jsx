@@ -160,8 +160,6 @@ function Home() {
           </div>
         )}
 
-        {/* Search bar removed */}
-
         <hr />
 
         {/* LIBRARY */}

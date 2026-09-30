@@ -8,9 +8,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ChannelMapper {
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
     public ChannelResponseDTO toChannelResponseDTO(Channel channel) {
         ChannelResponseDTO dto = new ChannelResponseDTO();
 
@@ -31,16 +28,5 @@ public class ChannelMapper {
         dto.setChannelThumbnail(channel.getChannelThumbnail());
         dto.setSubscriberCount(channel.getChannelStats().getSubCount());
         return dto;
-    }
-
-    //=========================
-    // UPDATE DTO --> ENTITY
-    //=========================
-    public void updateEntityFromDTO(ChannelResponseDTO dto, Channel entity){
-        if (dto == null || entity == null)
-            return;
-
-        if (dto.getChannelStats() != null)
-            entity.setChannelStats(dto.getChannelStats());
     }
 }

@@ -13,9 +13,7 @@ import java.util.List;
 
 @Component
 public class UserVideoMapper {
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
+
     public UserVideoResponseDTO toResponseDTO(UserVideo userVideo, VideoResponseDTO videoDto) {
         UserVideoResponseDTO dto = new UserVideoResponseDTO();
 

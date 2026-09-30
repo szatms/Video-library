@@ -27,9 +27,6 @@ public class AuthService {
     private final JwtService jwtService;
     private final AppSettingsService appSettingsService;
 
-    //=========================
-    // LOGIN
-    //=========================
     public AuthResponseDTO login(UserLoginDTO dto){
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
@@ -43,9 +40,6 @@ public class AuthService {
         return new AuthResponseDTO(responseUser, token);
     }
 
-    //=========================
-    // REGISTRATION
-    //=========================
     public AuthResponseDTO register(UserCreateDTO dto){
         if(userRepository.findByUsername(dto.getUsername()).isPresent())
             throw new IllegalArgumentException("Username already exists");
@@ -69,9 +63,6 @@ public class AuthService {
         return new AuthResponseDTO(responseUser, token);
     }
 
-    //=========================
-    // USER CHECK
-    //=========================
     public boolean hasUsers() {
         return userRepository.count() > 0;
     }

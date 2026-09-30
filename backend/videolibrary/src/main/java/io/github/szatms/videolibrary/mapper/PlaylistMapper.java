@@ -7,9 +7,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PlaylistMapper {
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
     public PlaylistResponseDTO toResponseDTO(Playlist playlist){
         PlaylistResponseDTO dto = new PlaylistResponseDTO();
 
@@ -27,9 +24,6 @@ public class PlaylistMapper {
         return dto;
     }
 
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
     public PlaylistSummaryDTO toSummaryDTO(Playlist playlist){
         PlaylistSummaryDTO dto = new PlaylistSummaryDTO();
 

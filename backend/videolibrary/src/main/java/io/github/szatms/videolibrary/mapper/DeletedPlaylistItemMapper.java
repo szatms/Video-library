@@ -6,17 +6,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DeletedPlaylistItemMapper {
-    //=========================
-    // ENTITY --> DELETED ENTITY
-    //=========================
     public DeletedPlaylistItem toDeletedPlaylistItem(PlaylistItem playlistItem){
         DeletedPlaylistItem deletedPlaylistItem = new DeletedPlaylistItem();
         deletedPlaylistItem.setPlaylistItem(playlistItem);
         return deletedPlaylistItem;
     }
 
-    //=========================
-    // DELETED ENTITY --> ENTITY
-    //=========================
     public PlaylistItem toPlaylistItem(DeletedPlaylistItem deletedPlaylistItem){return  deletedPlaylistItem.getPlaylistItem();}
 }

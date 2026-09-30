@@ -13,9 +13,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CodexMapper {
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
     public CodexResponseDTO toCodexResponseDTO(Codex codex) {
         CodexResponseDTO dto = new CodexResponseDTO();
 

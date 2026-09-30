@@ -9,7 +9,6 @@ public class RestClientConfig {
 
     @Bean
     public RestClient restClient() {
-        //return RestClient.create("http://127.0.0.1:8000");
         return RestClient.create("http://youtube-harvester:8000");
     }
 }

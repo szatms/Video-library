@@ -34,9 +34,6 @@ public class UserService {
     private final UserVideoService userVideoService;
     private final UserPlaylistService userPlaylistService;
 
-    //=========================
-    // CURRENT USER
-    //=========================
     public UserResponseDTO getCurrentUser() {
         return userMapper.toResponseDTO(getCurrentUserEntity());
     }
@@ -47,9 +44,6 @@ public class UserService {
                 .toList();
     }
 
-    //=========================
-    // UPDATE
-    //=========================
     public UserResponseDTO updateSelf(UserSelfUpdateDTO dto) {
         User user = getCurrentUserEntity();
 
@@ -120,9 +114,6 @@ public class UserService {
         return userMapper.toResponseDTO(user);
     }
 
-    //=========================
-    // DELETE
-    //=========================
     public void deleteSelf() {
         User user = getCurrentUserEntity();
         deleteUser(user.getUserId());

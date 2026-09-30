@@ -13,16 +13,13 @@ import java.util.ArrayList;
 
 @Component
 public class UserPlaylistMapper {
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
     public UserPlaylistResponseDTO toResponseDTO(UserPlaylist userPlaylist, PlaylistResponseDTO playlistResponseDTO){
         UserPlaylistResponseDTO dto = new UserPlaylistResponseDTO();
 
         dto.setId(userPlaylist.getId());
         dto.setWatched(userPlaylist.isWatched());
         dto.setNoteIds(new ArrayList<>());
-        dto.setItems(null); // Items are now stored as IDs, not full objects
+        dto.setItems(null);
         dto.setAddedAt(userPlaylist.getAddedAt());
         dto.setPlaylist(playlistResponseDTO);
 
@@ -40,9 +37,6 @@ public class UserPlaylistMapper {
         return dto;
     }
 
-    //=========================
-    // DTO --> ENTITY
-    //=========================
     public void updateEntityFromDTO(UserPlaylistUpdateDTO dto, UserPlaylist entity){
         if (dto == null || entity == null)
             return;

@@ -8,9 +8,6 @@ import java.time.Instant;
 
 @Component
 public class UserSettingsMapper {
-    //=========================
-    // DTO --> ENTITY
-    //=========================
     public void updateEntityFromDTO(UserSettings userSettings, UserSettingsDTO dto){
         userSettings.setDateFormat(dto.getDateFormat());
         userSettings.setTimeFormat(dto.getTimeFormat());

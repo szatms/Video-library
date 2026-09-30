@@ -10,10 +10,6 @@ import java.time.Instant;
 
 @Component
 public class NoteMapper {
-    //=========================
-    // ENTITY --> RESPONSE DTO
-    //=========================
-
     public NoteResponseDTO toResponseDTO(Note note){
         NoteResponseDTO dto = new NoteResponseDTO();
 
@@ -72,9 +68,6 @@ public class NoteMapper {
         return dto;
     }
 
-    // =========================
-    // UPDATE DTO → ENTITY
-    // =========================
     public void updateNoteFromDTO(Note note, NoteUpdateDTO dto){
         note.setTitle(dto.getTitle());
         note.setContent(dto.getContent());
