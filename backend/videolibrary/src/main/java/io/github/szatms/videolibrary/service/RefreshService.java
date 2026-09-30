@@ -15,6 +15,7 @@ import io.github.szatms.videolibrary.settings.appsettings.AppSettingsRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @RequiredArgsConstructor
-public class RefreshService {
+public class RefreshService implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(RefreshService.class);
     private static final int BATCH_SIZE = 100;
     
@@ -307,5 +308,11 @@ public class RefreshService {
         if (!erroredPlaylistIds.isEmpty()) {
             logger.warn("Errored playlists: {}", erroredPlaylistIds);
         }
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        logger.info("Application startup detected - triggering manual refresh of videos and playlists");
+        manuallyRefreshAllVideosAndPlaylists();
     }
 }

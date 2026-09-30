@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 
 function LoadingModal({ 
   show, 
@@ -14,22 +14,9 @@ function LoadingModal({
   // Calculate percentage for display
   const percentage = Math.min(100, Math.max(0, Math.round((progress / maxProgress) * 100)));
 
-  // Handle flashing effect for success
-  const [isFlashing, setIsFlashing] = useState(false);
-  
-  useEffect(() => {
-    if (isSuccess) {
-      setIsFlashing(true);
-      const flashTimer = setTimeout(() => {
-        setIsFlashing(false);
-      }, 2000);
-      return () => clearTimeout(flashTimer);
-    }
-  }, [isSuccess]);
-
   return (
     <div 
-      className={`modal show d-block ${isFlashing ? 'flash-success' : ''}`} 
+      className="modal show d-block" 
       style={{ backgroundColor: 'rgba(0,0,0,0.7)' }} 
       role="dialog"
     >
