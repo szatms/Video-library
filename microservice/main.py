@@ -1,5 +1,4 @@
 import os
-import yt_dlp
 import requests
 import re
 from fastapi import FastAPI, HTTPException
@@ -156,21 +155,21 @@ def getChannelMetadata(channelIdentifier: str) -> channelMetadata:
         logger.error(f"Error extracting channel metadata for {channelIdentifier}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to extract channel metadata: {str(e)}")
 
-def getPlaylistItems(playlistId: str) -> playlistResponse:
+def getPlaylistItems(playlistId: str):
     """Extract video URLs from a YouTube playlist using the Data API v3"""
     if not YOUTUBE_API_KEY:
         raise HTTPException(status_code=500, detail="YouTube Data API key not configured")
     
+    url = "https://www.googleapis.com/youtube/v3/playlistItems"
+    
+    params = {
+        'part': 'snippet',
+        'playlistId': playlistId,
+        'key': YOUTUBE_API_KEY,
+        'maxResults': 50
+    }
+    
     try:
-        url = "https://www.googleapis.com/youtube/v3/playlistItems"
-        
-        params = {
-            'part': 'snippet',
-            'playlistId': playlistId,
-            'key': YOUTUBE_API_KEY,
-            'maxResults': 50
-        }
-        
         response = requests.get(url, params=params)
         
         if response.status_code != 200:
@@ -195,7 +194,8 @@ def getPlaylistItems(playlistId: str) -> playlistResponse:
             logger.error(error_msg)
             raise HTTPException(status_code=500, detail=error_msg)
         
-        playlistResponse = playlistResponse(
+        # Create playlistResponse with default values to avoid undefined variable issues
+        playlist_response = playlistResponse(
             kind="youtube#playlistItemListResponse",
             etag=data.get('etag', ''),
             items=videoUrls,
@@ -206,7 +206,7 @@ def getPlaylistItems(playlistId: str) -> playlistResponse:
         )
         
         logger.info(f"Successfully extracted {len(videoUrls)} videos from playlist: {playlistId}")
-        return playlistResponse
+        return playlist_response
         
     except Exception as e:
         logger.error(f"Error extracting playlist items for {playlistId}: {str(e)}")
@@ -334,8 +334,8 @@ async def getPlaylistItemsEndpoint(url: str):
         if not playlistId:
             raise HTTPException(status_code=400, detail="Invalid playlist URL")
             
-        playlistResponse = getPlaylistItems(playlistId)
-        return playlistResponse
+        playlist_response = getPlaylistItems(playlistId)
+        return playlist_response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
